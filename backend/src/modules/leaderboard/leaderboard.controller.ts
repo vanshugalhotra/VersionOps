@@ -38,7 +38,7 @@ export class LeaderboardController {
   // ────────────────────────────────────────────────
   // GET LEADERBOARD
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.LEADERBOARD_READ)
+  @Permission(PERMISSIONS.LEADERBOARD_MANAGE)
   @Get()
   @ApiOperation({
     summary: 'Get leaderboard with pagination and filtering',
@@ -51,6 +51,18 @@ export class LeaderboardController {
     @Query() query: QueryOptionsDto,
   ): Promise<PaginatedLeaderboardResponse> {
     return this.leaderboardService.getLeaderboard(query);
+  }
+  @Permission(PERMISSIONS.LEADERBOARD_READ)
+  @Get('top5')
+  @ApiOperation({
+    summary: 'Get top 5',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Leaderboard fetched successfully',
+  })
+  async getLeaderboardTop5(): Promise<PaginatedLeaderboardResponse> {
+    return this.leaderboardService.getLeaderboardTop5();
   }
 
   @Permission(PERMISSIONS.LEADERBOARD_MANAGE)

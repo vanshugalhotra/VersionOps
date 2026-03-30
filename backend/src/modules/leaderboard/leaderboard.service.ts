@@ -225,6 +225,13 @@ export class LeaderboardService {
       total,
     };
   }
+  async getLeaderboardTop5(): Promise<PaginatedLeaderboardResponse> {
+    return this.getLeaderboard({
+      take: 5,
+      skip: 0,
+      includeRelations: true,
+    } as QueryOptionsDto);
+  }
 
   adjustScore(dto: AdjustScoreDto) {
     return this.prisma.manualScoreAdjustment.create({
