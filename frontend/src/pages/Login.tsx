@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Command, ShieldCheck, Medal } from 'lucide-react';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Command, ShieldCheck, Medal } from "lucide-react";
 import { mapped_toast } from "@/lib/toast_map.ts";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 /* ── Design tokens (Neon Arena / Stitch) ── */
 const T = {
@@ -28,8 +28,8 @@ const T = {
 };
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
 
@@ -51,7 +51,7 @@ const Login = () => {
     try {
       await login({ email, password });
     } catch (error: unknown) {
-      mapped_toast('Invalid credentials', 'error');
+      mapped_toast("Invalid credentials", "error");
       console.error("Login Failed", error);
     } finally {
       setIsSubmitting(false);
@@ -83,7 +83,11 @@ const Login = () => {
           <div className="flex items-center gap-2">
             <span
               className="font-bold text-sm leading-none font-space"
-              style={{ color: T.textPrimary, letterSpacing: "-0.02em", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{
+                color: T.textPrimary,
+                letterSpacing: "-0.02em",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
             >
               Version 26
             </span>
@@ -103,7 +107,10 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="flex gap-5 text-xs font-medium" style={{ color: T.textSecondary }}>
+        <div
+          className="flex gap-5 text-xs font-medium"
+          style={{ color: T.textSecondary }}
+        >
           {/* No public navigation links */}
         </div>
       </nav>
@@ -118,7 +125,8 @@ const Login = () => {
             transform: "translate(-50%, -60%)",
             width: 560,
             height: 560,
-            background: "radial-gradient(circle, rgba(0,255,148,0.06) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(0,255,148,0.06) 0%, transparent 70%)",
             borderRadius: "50%",
           }}
         />
@@ -129,7 +137,8 @@ const Login = () => {
           style={{
             background: T.surface,
             border: `1px solid ${T.border}`,
-            boxShadow: "0 0 48px rgba(0,255,148,0.04), 0 20px 60px rgba(0,0,0,0.5)",
+            boxShadow:
+              "0 0 48px rgba(0,255,148,0.04), 0 20px 60px rgba(0,0,0,0.5)",
           }}
         >
           <div
@@ -142,7 +151,13 @@ const Login = () => {
             <ShieldCheck className="w-3 h-3" style={{ color: T.accent }} />
             <span
               className="font-bold"
-              style={{ fontSize: 9, color: T.accent, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{
+                fontSize: 9,
+                color: T.accent,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
             >
               Secure
             </span>
@@ -158,7 +173,11 @@ const Login = () => {
                 height: 56,
               }}
             >
-              <Command className="w-6 h-6" style={{ color: T.accent }} strokeWidth={2.5} />
+              <Command
+                className="w-6 h-6"
+                style={{ color: T.accent }}
+                strokeWidth={2.5}
+              />
             </div>
 
             <p
@@ -173,7 +192,13 @@ const Login = () => {
             >
               Version 26 · Cognix
             </p>
-            <h1 className="text-heading mb-2" style={{ color: T.textPrimary, fontFamily: "Space Grotesk, sans-serif" }}>
+            <h1
+              className="text-heading mb-2"
+              style={{
+                color: T.textPrimary,
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
               Sign in to Dashboard
             </h1>
             <p className="text-body" style={{ color: T.textSecondary }}>
@@ -186,7 +211,11 @@ const Login = () => {
               <Label
                 htmlFor="email"
                 className="text-caption font-bold block"
-                style={{ color: T.textPrimary, letterSpacing: "0.04em", fontFamily: "Space Grotesk, sans-serif" }}
+                style={{
+                  color: T.textPrimary,
+                  letterSpacing: "0.04em",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
               >
                 Email
               </Label>
@@ -212,7 +241,11 @@ const Login = () => {
                 <Label
                   htmlFor="password"
                   className="text-caption font-bold"
-                  style={{ color: T.textPrimary, letterSpacing: "0.04em", fontFamily: "Space Grotesk, sans-serif" }}
+                  style={{
+                    color: T.textPrimary,
+                    letterSpacing: "0.04em",
+                    fontFamily: "Space Grotesk, sans-serif",
+                  }}
                 >
                   Password
                 </Label>
@@ -220,8 +253,13 @@ const Login = () => {
                   type="button"
                   className="text-caption font-medium transition-colors duration-150"
                   style={{ color: T.textSecondary }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.textSecondary; }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = T.accent;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.color =
+                      T.textSecondary;
+                  }}
                 >
                   Forgot password?
                 </button>
@@ -265,21 +303,6 @@ const Login = () => {
                 </>
               )}
             </Button>
-
-            <div className="text-center mt-5">
-              <p className="text-sm" style={{ color: T.textSecondary }}>
-                Don't have an account?{' '}
-                <Link
-                  to="/register"
-                  className="font-bold transition-colors duration-150"
-                  style={{ color: T.accent }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accentDim; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent; }}
-                >
-                  Create account
-                </Link>
-              </p>
-            </div>
           </form>
         </div>
       </div>
@@ -300,8 +323,12 @@ const Login = () => {
               href="#"
               className="transition-colors duration-150"
               style={{ fontFamily: "Space Grotesk, sans-serif" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.textPrimary; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.textMuted; }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.color = T.textPrimary;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.color = T.textMuted;
+              }}
             >
               {link}
             </a>

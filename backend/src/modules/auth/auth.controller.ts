@@ -19,7 +19,6 @@ import { Response } from 'express';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './gaurds/jwt-auth.gaurd';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { getAccessCookieOptions } from 'src/common/utils/auth/cookie.util';
@@ -33,39 +32,6 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {}
-
-  /* =========================================================
-     REGISTER
-  ========================================================= */
-
-  @HttpCode(HttpStatus.CREATED)
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiBody({ type: RegisterDto })
-  @ApiResponse({
-    status: 201,
-    description:
-      'Registration successful. Returns user and sets HttpOnly cookie.',
-    type: AuthResponseDto,
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Email already registered',
-  })
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthResponseDto> {
-    const { accessToken, user } = await this.authService.register(dto);
-
-    res.cookie(
-      this.configService.get('AUTH_COOKIE_NAME'),
-      accessToken,
-      getAccessCookieOptions(this.configService),
-    );
-
-    return user;
-  }
 
   /* =========================================================
      LOGIN

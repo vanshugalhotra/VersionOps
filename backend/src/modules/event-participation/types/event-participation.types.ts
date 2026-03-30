@@ -1,6 +1,4 @@
-import { Event, Participant, College } from '@prisma/client';
-
-export type ParticipantWithCollege = Participant & { college?: College };
+import { Event, Participant } from '@prisma/client';
 
 export interface EventParticipationResponse {
   id: number;
@@ -11,7 +9,7 @@ export interface EventParticipationResponse {
   dummyId?: string;
   teamId?: string;
   event?: Event;
-  participant?: ParticipantWithCollege;
+  participant?: Participant;
 
   createdAt: string;
 }

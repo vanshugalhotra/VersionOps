@@ -30,7 +30,6 @@ import { JwtAuthGuard } from '../auth/gaurds/jwt-auth.gaurd';
 import { PermissionsGuard } from '../auth/gaurds/permission.gaurd';
 import { Permission } from '../auth/decorators/permission.decorator';
 import { PERMISSIONS } from '../auth/rbac/role-permissions.map';
-import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Participants')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -142,12 +141,12 @@ export class ParticipantController {
   }
 
   // ────────────────────────────────────────────────
-  // GET ALL PARTICIPANTS (PUBLIC)
+  // GET ALL PARTICIPANTS
   // ────────────────────────────────────────────────
-  @Public()
+  @Permission(PERMISSIONS.PARTICIPANT_READ)
   @Get()
   @ApiOperation({
-    summary: 'Get all participants with filtering and pagination (Public)',
+    summary: 'Get all participants with filtering and pagination',
   })
   @ApiResponse({
     status: 200,
@@ -158,11 +157,11 @@ export class ParticipantController {
   }
 
   // ────────────────────────────────────────────────
-  // GET ONE PARTICIPANT (PUBLIC)
+  // GET ONE PARTICIPANT
   // ────────────────────────────────────────────────
-  @Public()
+  @Permission(PERMISSIONS.PARTICIPANT_READ)
   @Get(':id')
-  @ApiOperation({ summary: 'Get a single participant by ID (Public)' })
+  @ApiOperation({ summary: 'Get a single participant by ID' })
   @ApiParam({
     name: 'id',
     description: 'Participant ID',
