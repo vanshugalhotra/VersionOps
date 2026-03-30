@@ -17,6 +17,7 @@ import { buildQueryArgs } from 'src/common/utils/query-builder.util';
 import {
   EventParticipationResponse,
   PaginatedEventParticipationResponse,
+  ParticipantWithCollege,
 } from './types/event-participation.types';
 
 @Injectable()
@@ -168,7 +169,7 @@ export class EventParticipationService {
       where: { id },
       include: {
         event: includeRelations,
-        participant: includeRelations,
+        participant: includeRelations ? { include: { college: true } } : false,
       },
     });
 
@@ -383,7 +384,7 @@ export class EventParticipationService {
   private mapToResponse(
     entity: EventParticipation & {
       event?: Event;
-      participant?: Participant;
+      participant?: ParticipantWithCollege;
     },
     includeRelations = false,
   ): EventParticipationResponse {

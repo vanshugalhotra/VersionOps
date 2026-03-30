@@ -8,6 +8,7 @@ import { JwtAuthGuard } from '../auth/gaurds/jwt-auth.gaurd';
 import { PermissionsGuard } from '../auth/gaurds/permission.gaurd';
 import { Permission } from '../auth/decorators/permission.decorator';
 import { PERMISSIONS } from '../auth/rbac/role-permissions.map';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Leaderboard')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -36,12 +37,12 @@ export class LeaderboardController {
   }
 
   // ────────────────────────────────────────────────
-  // GET LEADERBOARD
+  // GET LEADERBOARD (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.LEADERBOARD_MANAGE)
+  @Public()
   @Get()
   @ApiOperation({
-    summary: 'Get leaderboard with pagination and filtering',
+    summary: 'Get leaderboard with pagination and filtering (Public)',
   })
   @ApiResponse({
     status: 200,

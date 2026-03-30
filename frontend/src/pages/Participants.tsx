@@ -3,11 +3,36 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, UserCheck, UserX, Eye, Trash2, Pencil, RotateCcw } from "lucide-react";
- ;
-import { participantService, collegeService, eventService } from "@/api/services";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Search,
+  UserCheck,
+  UserX,
+  Eye,
+  Trash2,
+  Pencil,
+  RotateCcw,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  participantService,
+  collegeService,
+  eventService,
+} from "@/api/services";
 import { Participant, College, FestEvent } from "@/api/types";
 import {
   AlertDialog,
@@ -29,10 +54,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {z} from "zod";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { z } from "zod";
+import { mapped_toast } from "@/lib/toast_map.ts";
 
 const yearEnum = z.enum(["ONE", "TWO"]);
 
@@ -49,18 +85,25 @@ export default function Participants() {
   const [filters, setFilters] = useState<Filters>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [detailId, setDetailId] = useState<number | null>(null);
-  const [detailParticipant, setDetailParticipant] = useState<Participant | null>(null);
-  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
-  const [participantData, setParticipantData] = useState<Partial<Participant> & { collegeId?: number }>({});
+  const [detailParticipant, setDetailParticipant] =
+    useState<Participant | null>(null);
+  const [editingParticipant, setEditingParticipant] =
+    useState<Participant | null>(null);
+  const [participantData, setParticipantData] = useState<
+    Partial<Participant> & { collegeId?: number }
+  >({});
 
-  const [participantsAccessDenied, setParticipantsAccessDenied] = useState(false);
+  const [participantsAccessDenied, setParticipantsAccessDenied] =
+    useState(false);
   const [collegesAccessDenied, setCollegesAccessDenied] = useState(false);
   const [eventsAccessDenied, setEventsAccessDenied] = useState(false);
-  const [participantDetailsAccessDenied, setParticipantDetailsAccessDenied] = useState(false);
+  const [participantDetailsAccessDenied, setParticipantDetailsAccessDenied] =
+    useState(false);
 
   const loadParticipants = useCallback(async () => {
     try {
-      const activeFilters: Record<string, string | number | null | undefined> = {};
+      const activeFilters: Record<string, string | number | null | undefined> =
+        {};
       for (const [key, value] of Object.entries(filters)) {
         if (value) {
           activeFilters[key] = value;
@@ -77,12 +120,16 @@ export default function Participants() {
       setParticipantsAccessDenied(false);
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have access to participants data.', 'warning', true)
+        mapped_toast(
+          "You do not have access to participants data.",
+          "warning",
+          true,
+        );
         setParticipantsAccessDenied(true);
         setParticipants([]);
         return;
-      }else {
-        mapped_toast('Failed to load participants.', 'error')
+      } else {
+        mapped_toast("Failed to load participants.", "error");
         console.error("Failed to load participants", error);
         setParticipants([]);
       }
@@ -96,47 +143,54 @@ export default function Participants() {
       eventService.getAll({ take: 500 }),
     ]);
 
-    if (participantsRes.status === 'fulfilled') {
+    if (participantsRes.status === "fulfilled") {
       setParticipants(participantsRes.value.items || []);
       setParticipantsAccessDenied(false);
     } else {
       if ((participantsRes.reason as any)?.response?.status === 403) {
         setParticipants([]);
         setParticipantsAccessDenied(true);
-        mapped_toast('You do not have access to participants data.', 'warning', true)
-
+        mapped_toast(
+          "You do not have access to participants data.",
+          "warning",
+          true,
+        );
       } else {
-        mapped_toast('Failed to load participants.', 'error')
+        mapped_toast("Failed to load participants.", "error");
         console.error("Failed to load participants", participantsRes.reason);
         setParticipants([]);
       }
     }
 
-    if (collegesRes.status === 'fulfilled') {
+    if (collegesRes.status === "fulfilled") {
       setColleges(collegesRes.value.items || []);
       setCollegesAccessDenied(false);
     } else {
       if ((collegesRes.reason as any)?.response?.status === 403) {
         setColleges([]);
         setCollegesAccessDenied(true);
-        mapped_toast('You do not have access to college data.', 'warning', true)
+        mapped_toast(
+          "You do not have access to college data.",
+          "warning",
+          true,
+        );
       } else {
-        mapped_toast('Failed to load colleges.', 'error')
+        mapped_toast("Failed to load colleges.", "error");
         console.error("Failed to load colleges", collegesRes.reason);
         setColleges([]);
       }
     }
 
-    if (eventsRes.status === 'fulfilled') {
+    if (eventsRes.status === "fulfilled") {
       setEvents(eventsRes.value.items || []);
       setEventsAccessDenied(false);
     } else {
       if ((eventsRes.reason as any)?.response?.status === 403) {
         setEvents([]);
         setEventsAccessDenied(true);
-        mapped_toast('You do not have access to event data.', 'warning', true)
+        mapped_toast("You do not have access to event data.", "warning", true);
       } else {
-        mapped_toast('Failed to load events.', 'error')
+        mapped_toast("Failed to load events.", "error");
         console.error("Failed to load events", eventsRes.reason);
         setEvents([]);
       }
@@ -164,10 +218,14 @@ export default function Participants() {
       if (error?.response?.status === 403) {
         setParticipantDetailsAccessDenied(true);
         setDetailParticipant(null);
-        mapped_toast('You do not have access to participant data.', 'warning', true)
+        mapped_toast(
+          "You do not have access to participant data.",
+          "warning",
+          true,
+        );
         return;
       }
-      mapped_toast('Failed to load participant details.', 'error')
+      mapped_toast("Failed to load participant details.", "error");
       console.error("Failed to load participant details", error);
       setDetailParticipant(null);
     }
@@ -196,15 +254,18 @@ export default function Participants() {
     try {
       const { college, ...payload } = participantData;
       await participantService.update(editingParticipant.id, payload);
-      mapped_toast('Participant updated successfully.', 'success')
+      mapped_toast("Participant updated successfully.", "success");
       setEditingParticipant(null);
       await loadParticipants();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have permission to perform this action.', 'warning')
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
         return;
       }
-      mapped_toast('Failed to update participant.', 'error')
+      mapped_toast("Failed to update participant.", "error");
       console.error("Failed to update participant", error);
     }
   };
@@ -231,34 +292,47 @@ export default function Participants() {
 
   const bulkCheckIn = async () => {
     try {
-      const promises = Array.from(selected).map(id => participantService.checkIn(id));
+      const promises = Array.from(selected).map((id) =>
+        participantService.checkIn(id),
+      );
       await Promise.all(promises);
-      mapped_toast(`${selected.size} participants checked in`, 'success')
+      mapped_toast(`${selected.size} participants checked in`, "success");
       setSelected(new Set());
       await loadParticipants();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have permission to perform this action.', 'warning')
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
         return;
       }
-      mapped_toast('Some check-ins failed', 'error')
+      mapped_toast("Some check-ins failed", "error");
       console.error("Some check-ins failed", error);
     }
   };
 
   const bulkNoShow = async () => {
     try {
-      const promises = Array.from(selected).map(id => participantService.noShow(id));
+      const promises = Array.from(selected).map((id) =>
+        participantService.noShow(id),
+      );
       await Promise.all(promises);
-      mapped_toast(`${selected.size} participants marked as no-show`, 'success')
+      mapped_toast(
+        `${selected.size} participants marked as no-show`,
+        "success",
+      );
       setSelected(new Set());
       await loadParticipants();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have permission to perform this action.', 'warning')
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
         return;
       }
-      mapped_toast('Some updates failed', 'error')
+      mapped_toast("Some updates failed", "error");
       console.error("Some updates failed", error);
     }
   };
@@ -266,14 +340,17 @@ export default function Participants() {
   const deleteParticipant = async (participantId: number) => {
     try {
       await participantService.delete(participantId);
-      mapped_toast('Participant deleted successfully', 'success')
+      mapped_toast("Participant deleted successfully", "success");
       await loadParticipants();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have permission to perform this action.', 'warning')
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
         return;
       }
-      mapped_toast('Failed to delete participant', 'error')
+      mapped_toast("Failed to delete participant", "error");
       console.error("Failed to delete participant", error);
     }
   };
@@ -288,27 +365,33 @@ export default function Participants() {
   };
 
   const getEventName = (eventId: number) => {
-    if (eventsAccessDenied) return 'Event data unavailable';
-    return events.find(e => e.id === eventId)?.name || 'Unknown Event';
+    if (eventsAccessDenied) return "Event data unavailable";
+    return events.find((e) => e.id === eventId)?.name || "Unknown Event";
   };
 
-  const updateParticipantStatus = async (participantId: number, action: "CHECK_IN" | "NO_SHOW" | "RESET") => {
+  const updateParticipantStatus = async (
+    participantId: number,
+    action: "CHECK_IN" | "NO_SHOW" | "RESET",
+  ) => {
     try {
-      if (action === 'CHECK_IN') {
+      if (action === "CHECK_IN") {
         await participantService.checkIn(participantId);
-      } else if (action === 'NO_SHOW') {
+      } else if (action === "NO_SHOW") {
         await participantService.noShow(participantId);
-      } else if (action === 'RESET') {
+      } else if (action === "RESET") {
         await participantService.resetStatus(participantId);
       }
-      mapped_toast('Participant status updated', 'success')
+      mapped_toast("Participant status updated", "success");
       await loadParticipants();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        mapped_toast('You do not have permission to perform this action.', 'warning')
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
         return;
       }
-      mapped_toast('Failed to update status', 'error')
+      mapped_toast("Failed to update status", "error");
       console.error("Failed to update status", error);
     }
   };
@@ -324,179 +407,419 @@ export default function Participants() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Participants</h2>
-            {!participantsAccessDenied && <p className="text-sm text-muted-foreground">{participants.length} loaded</p>}
-          </div>
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-none px-6 pt-6 pb-4">
+          <p className="text-label font-semibold text-primary mb-1">
+            Management Directory
+          </p>
+          <h1 className="text-heading">Participants</h1>
+          {!participantsAccessDenied && (
+            <p className="text-caption text-muted-foreground mt-2">
+              {participants.length} records
+            </p>
+          )}
         </div>
 
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, ID, or college..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 max-w-xl"
-              disabled={participantsAccessDenied}
-            />
-          </div>
-          
-          <Select
-            value={filters.festStatus || ""}
-            onValueChange={(value) => handleFilterChange("festStatus", value)}
-            disabled={participantsAccessDenied}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="REGISTERED">Registered</SelectItem>
-              <SelectItem value="CHECKED_IN">Checked In</SelectItem>
-              <SelectItem value="NO_SHOW">No-Show</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex-none px-6 pb-4">
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, ID, or college..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 max-w-xl"
+                disabled={participantsAccessDenied}
+              />
+            </div>
 
-          {!collegesAccessDenied && colleges.length > 0 && (
             <Select
-              value={String(filters.collegeId || "")}
-              onValueChange={(value) => handleFilterChange("collegeId", parseInt(value))}
+              value={filters.festStatus || ""}
+              onValueChange={(value) => handleFilterChange("festStatus", value)}
               disabled={participantsAccessDenied}
             >
-              <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Filter by College" />
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
               <SelectContent>
-                {colleges.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="REGISTERED">Registered</SelectItem>
+                <SelectItem value="CHECKED_IN">Checked In</SelectItem>
+                <SelectItem value="NO_SHOW">No-Show</SelectItem>
               </SelectContent>
             </Select>
-          )}
 
-          <Button variant="outline" onClick={clearFilters} disabled={participantsAccessDenied}>Clear</Button>
+            {!collegesAccessDenied && colleges.length > 0 && (
+              <Select
+                value={String(filters.collegeId || "")}
+                onValueChange={(value) =>
+                  handleFilterChange("collegeId", parseInt(value))
+                }
+                disabled={participantsAccessDenied}
+              >
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Filter by College" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colleges.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Button
+              variant="outline"
+              onClick={clearFilters}
+              disabled={participantsAccessDenied}
+            >
+              Clear
+            </Button>
+          </div>
         </div>
 
         {selected.size > 0 && !participantsAccessDenied && (
-          <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-2">
-            <span className="text-sm font-medium">{selected.size} selected</span>
-            <Button size="sm" onClick={bulkCheckIn}>
-              <UserCheck className="mr-1 h-3.5 w-3.5" /> Bulk Check-In
-            </Button>
-            <Button size="sm" variant="destructive" onClick={bulkNoShow}>
-              <UserX className="mr-1 h-3.5 w-3.5" /> Mark No-Show
-            </Button>
-          </div>
-        )}
-
-        {participantsAccessDenied ? (
-          <div className="border rounded-lg flex items-center justify-center h-64">
-            <p className="text-muted-foreground">You do not have access to participants data.</p>
-          </div>
-        ) : (
-          <div className="border rounded-lg">
-            <div className="relative overflow-y-auto max-h-[calc(12*3.5rem+3.2rem)]">
-              <Table className="w-full">
-                <TableHeader className="sticky top-0 bg-muted/50 z-10">
-                  <TableRow>
-                    <TableHead className="w-[4%]"><Checkbox checked={selected.size === participants.length && participants.length > 0} onCheckedChange={toggleAll} /></TableHead>
-                    <TableHead className="w-[10%]">ID</TableHead>
-                    <TableHead className="w-[20%]">Name</TableHead>
-                    <TableHead className="w-[10%]">College</TableHead>
-                    <TableHead className="w-[8%]">Year</TableHead>
-                    <TableHead className="w-[20%]">Email</TableHead>
-                    <TableHead className="w-[10%]">Status</TableHead>
-                    <TableHead className="w-[18%] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participants.map((p) => (
-                    <TableRow key={p.id} className={selected.has(p.id) ? "bg-primary/5" : ""}>
-                      <TableCell><Checkbox checked={selected.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} /></TableCell>
-                      <TableCell className="font-mono text-xs">{p.participantId}</TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell>{p.college?.code}</TableCell>
-                      <TableCell>{p.year}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground truncate">{p.email}</TableCell>
-                      <TableCell>
-                        {p.festStatus === 'NO_SHOW' ? <Badge variant="destructive" className="text-xs">No-Show</Badge>
-                        : p.festStatus === 'CHECKED_IN' ? <Badge className="bg-green-600 text-white text-xs">Checked In</Badge>
-                        : <Badge variant="secondary" className="text-xs">{p.festStatus}</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center gap-1 justify-end">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateParticipantStatus(p.id, 'CHECK_IN')}><UserCheck className="h-4 w-4" /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Check-In</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateParticipantStatus(p.id, 'NO_SHOW')}><UserX className="h-4 w-4" /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Mark No-Show</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateParticipantStatus(p.id, 'RESET')}><RotateCcw className="h-4 w-4" /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Reset to Registered</TooltipContent>
-                          </Tooltip>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailId(p.id)}><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(p)}><Pencil className="h-4 w-4" /></Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to delete this participant?</AlertDialogTitle>
-                                <AlertDialogDescription>This action cannot be undone. This will permanently delete the participant "{p.name}".</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteParticipant(p.id)}>Yes, delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {participants.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No participants found</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+          <div className="flex-none px-6 pb-4">
+            <div className="flex items-center justify-between bg-secondary border-l-4 border-primary p-4 rounded">
+              <span className="text-sm font-semibold text-primary">
+                {selected.size} selected
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={bulkCheckIn}>
+                  <UserCheck className="mr-1 h-4 w-4" /> Bulk Check-In
+                </Button>
+                <Button size="sm" variant="destructive" onClick={bulkNoShow}>
+                  <UserX className="mr-1 h-4 w-4" /> Mark No-Show
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
-        <Dialog open={!!editingParticipant} onOpenChange={() => setEditingParticipant(null)}>
+        <div className="flex-1 min-h-0 px-6 pb-6 flex flex-col">
+          {participantsAccessDenied ? (
+            <div className="flex-1 flex flex-col items-center justify-center border border-destructive/30 rounded-lg">
+              <UserX className="h-8 w-8 text-destructive mb-4" />
+              <p className="text-foreground font-medium mb-2">Access Denied</p>
+              <p className="text-muted-foreground text-sm">
+                Insufficient clearance to view directory
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 border border-border rounded-lg overflow-hidden flex flex-col">
+              <div className="flex-none border-b-2 border-primary/20">
+                <div
+                  className="w-full"
+                  style={{
+                    display: "table",
+                    tableLayout: "fixed",
+                    width: "100%",
+                  }}
+                >
+                  <div style={{ display: "table-header-group" }}>
+                    <div
+                      className="bg-secondary"
+                      style={{ display: "table-row" }}
+                    >
+                      <div
+                        className="h-12 bg-secondary px-4 py-3"
+                        style={{ display: "table-cell", width: "50px" }}
+                      >
+                        <Checkbox
+                          checked={
+                            selected.size === participants.length &&
+                            participants.length > 0
+                          }
+                          onCheckedChange={toggleAll}
+                        />
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell", width: "120px" }}
+                      >
+                        ID
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell" }}
+                      >
+                        Name
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell", width: "100px" }}
+                      >
+                        College
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell", width: "80px" }}
+                      >
+                        Year
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell" }}
+                      >
+                        Email
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3"
+                        style={{ display: "table-cell", width: "130px" }}
+                      >
+                        Status
+                      </div>
+                      <div
+                        className="h-12 text-table-header bg-secondary px-4 py-3 text-right"
+                        style={{ display: "table-cell", width: "220px" }}
+                      >
+                        Actions
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <Table className="w-full" style={{ tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "50px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "auto" }} />
+                    <col style={{ width: "100px" }} />
+                    <col style={{ width: "80px" }} />
+                    <col style={{ width: "auto" }} />
+                    <col style={{ width: "130px" }} />
+                    <col style={{ width: "220px" }} />
+                  </colgroup>
+                  <TableBody>
+                    {participants.map((p) => (
+                      <TableRow
+                        key={p.id}
+                        data-state={selected.has(p.id) && "selected"}
+                        className="border-b border-border"
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(p.id)}
+                            onCheckedChange={() => toggleSelect(p.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-table-cell-sm">
+                          {p.participantId}
+                        </TableCell>
+                        <TableCell className="text-table-cell font-medium">
+                          {p.name}
+                        </TableCell>
+                        <TableCell className="text-table-cell-sm">
+                          {p.college?.code}
+                        </TableCell>
+                        <TableCell className="text-table-cell">
+                          {p.year}
+                        </TableCell>
+                        <TableCell className="text-table-cell">
+                          {p.email}
+                        </TableCell>
+                        <TableCell>
+                          {p.festStatus === "NO_SHOW" ? (
+                            <Badge variant="destructive">No-Show</Badge>
+                          ) : p.festStatus === "CHECKED_IN" ? (
+                            <Badge className="bg-primary/10 text-primary border border-primary/20">
+                              Checked In
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">{p.festStatus}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary"
+                                  onClick={() =>
+                                    updateParticipantStatus(p.id, "CHECK_IN")
+                                  }
+                                  disabled={p.festStatus === "CHECKED_IN"}
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Check In</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() =>
+                                    updateParticipantStatus(p.id, "NO_SHOW")
+                                  }
+                                  disabled={p.festStatus === "NO_SHOW"}
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Mark No-Show</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground"
+                                  onClick={() =>
+                                    updateParticipantStatus(p.id, "RESET")
+                                  }
+                                  disabled={p.festStatus === "REGISTERED"}
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Reset to Registered
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <div className="w-px h-4 bg-border mx-1" />
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setDetailId(p.id)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View Details</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditClick(p)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete Participant?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. "{p.name}"
+                                    will be permanently removed.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteParticipant(p.id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {participants.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-16">
+                          <p className="text-muted-foreground">
+                            No participants found.
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Dialog
+          open={!!editingParticipant}
+          onOpenChange={() => setEditingParticipant(null)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Participant</DialogTitle>
-              <DialogDescription>Update the details for {editingParticipant?.name}.</DialogDescription>
+              <DialogDescription>
+                Update the details for {editingParticipant?.name}.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Name</Label>
-                <Input id="name" value={participantData.name || ''} onChange={(e) => setParticipantData({...participantData, name: e.target.value})} className="col-span-3" />
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={participantData.name || ""}
+                  onChange={(e) =>
+                    setParticipantData({
+                      ...participantData,
+                      name: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">Email</Label>
-                <Input id="email" value={participantData.email || ''} onChange={(e) => setParticipantData({...participantData, email: e.target.value})} className="col-span-3" />
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={participantData.email || ""}
+                  onChange={(e) =>
+                    setParticipantData({
+                      ...participantData,
+                      email: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="year" className="text-right">Year</Label>
-                <Select value={participantData.year} onValueChange={(value: z.infer<typeof yearEnum>) => setParticipantData({...participantData, year: value})}>
+                <Label htmlFor="year" className="text-right">
+                  Year
+                </Label>
+                <Select
+                  value={participantData.year}
+                  onValueChange={(value: z.infer<typeof yearEnum>) =>
+                    setParticipantData({ ...participantData, year: value })
+                  }
+                >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
@@ -507,25 +830,60 @@ export default function Participants() {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">Phone</Label>
-                <Input id="phone" value={participantData.phone || ''} onChange={(e) => setParticipantData({...participantData, phone: e.target.value})} className="col-span-3" />
+                <Label htmlFor="phone" className="text-right">
+                  Phone
+                </Label>
+                <Input
+                  id="phone"
+                  value={participantData.phone || ""}
+                  onChange={(e) =>
+                    setParticipantData({
+                      ...participantData,
+                      phone: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="hackerearth" className="text-right">HackerEarth</Label>
-                <Input id="hackerearth" value={participantData.hackerearthUser || ''} onChange={(e) => setParticipantData({...participantData, hackerearthUser: e.target.value})} className="col-span-3" />
+                <Label htmlFor="hackerearth" className="text-right">
+                  HackerEarth
+                </Label>
+                <Input
+                  id="hackerearth"
+                  value={participantData.hackerearthUser || ""}
+                  onChange={(e) =>
+                    setParticipantData({
+                      ...participantData,
+                      hackerearthUser: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
               </div>
               {!collegesAccessDenied && (
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="college" className="text-right">College</Label>
-                  <Select 
-                    value={String(participantData.collegeId || '')} 
-                    onValueChange={(value) => setParticipantData({...participantData, collegeId: parseInt(value)})}
+                  <Label htmlFor="college" className="text-right">
+                    College
+                  </Label>
+                  <Select
+                    value={String(participantData.collegeId || "")}
+                    onValueChange={(value) =>
+                      setParticipantData({
+                        ...participantData,
+                        collegeId: parseInt(value),
+                      })
+                    }
                   >
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select a college" />
                     </SelectTrigger>
                     <SelectContent>
-                      {colleges.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                      {colleges.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -537,60 +895,134 @@ export default function Participants() {
           </DialogContent>
         </Dialog>
 
-        <Sheet open={!!detailId} onOpenChange={(isOpen) => !isOpen && handleCloseDetailSheet()}>
+        <Sheet
+          open={!!detailId}
+          onOpenChange={(isOpen) => !isOpen && handleCloseDetailSheet()}
+        >
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>{participantDetailsAccessDenied ? "Access Denied" : detailParticipant ? detailParticipant.name : "Loading..."}</SheetTitle>
+              <SheetTitle>
+                {participantDetailsAccessDenied
+                  ? "Access Denied"
+                  : detailParticipant
+                    ? detailParticipant.name
+                    : "Loading..."}
+              </SheetTitle>
               <SheetDescription>
                 {participantDetailsAccessDenied
                   ? "You do not have access to view this participant."
                   : detailParticipant
-                  ? `Viewing details for participant ${detailParticipant.participantId}.`
-                  : "Loading participant details..."}
+                    ? `Viewing details for participant ${detailParticipant.participantId}.`
+                    : "Loading participant details..."}
               </SheetDescription>
             </SheetHeader>
             {detailParticipant && !participantDetailsAccessDenied && (
               <div className="mt-6 space-y-6">
                 {role !== "PARTICIPANT" && (
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><p className="text-muted-foreground">ID</p><p className="font-mono font-medium">{detailParticipant.participantId}</p></div>
-                    <div><p className="text-muted-foreground">College</p><p className="font-medium">{detailParticipant.college?.name} ({detailParticipant.college?.code})</p></div>
-                    <div><p className="text-muted-foreground">Year</p><p className="font-medium">{detailParticipant.year}</p></div>
-                    <div><p className="text-muted-foreground">Status</p><p className="font-medium">{detailParticipant.festStatus}</p></div>
-                    <div className="col-span-2"><p className="text-muted-foreground">Email</p><p className="font-medium">{detailParticipant.email}</p></div>
-                    <div className="col-span-2"><p className="text-muted-foreground">Phone</p><p className="font-medium">{detailParticipant.phone || 'N/A'}</p></div>
-                    <div className="col-span-2"><p className="text-muted-foreground">HackerEarth</p><p className="font-medium">{detailParticipant.hackerearthUser || 'N/A'}</p></div>
+                    <div>
+                      <p className="text-muted-foreground">ID</p>
+                      <p className="font-mono font-medium">
+                        {detailParticipant.participantId}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">College</p>
+                      <p className="font-medium">
+                        {detailParticipant.college?.name} (
+                        {detailParticipant.college?.code})
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Year</p>
+                      <p className="font-medium">{detailParticipant.year}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Status</p>
+                      <p className="font-medium">
+                        {detailParticipant.festStatus}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Email</p>
+                      <p className="font-medium">{detailParticipant.email}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Phone</p>
+                      <p className="font-medium">
+                        {detailParticipant.phone || "N/A"}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">HackerEarth</p>
+                      <p className="font-medium">
+                        {detailParticipant.hackerearthUser || "N/A"}
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 <div>
                   <h4 className="font-medium mb-2">Event Participations</h4>
-                  {detailParticipant.participations && detailParticipant.participations.length > 0 ? (
+                  {detailParticipant.participations &&
+                  detailParticipant.participations.length > 0 ? (
                     <div className="space-y-2">
-                      {detailParticipant.participations.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                          <span className="text-sm">{getEventName(p.eventId)}</span>
-                          {p.teamId && role !== "PARTICIPANT" && <Badge variant="secondary" className="text-xs">Team: {p.teamId}</Badge>}
+                      {detailParticipant.participations.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                        >
+                          <span className="text-sm">
+                            {getEventName(p.eventId)}
+                          </span>
+                          {p.teamId && role !== "PARTICIPANT" && (
+                            <Badge variant="secondary" className="text-xs">
+                              Team: {p.teamId}
+                            </Badge>
+                          )}
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-muted-foreground">No event participations.</p>}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No event participations.
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <h4 className="font-medium mb-2">Event Results</h4>
-                  {detailParticipant.results && detailParticipant.results.length > 0 ? (
+                  {detailParticipant.results &&
+                  detailParticipant.results.length > 0 ? (
                     <div className="space-y-2">
-                      {detailParticipant.results.map(r => (
-                        <div key={r.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                          <span className="text-sm">{getEventName(r.eventId)}</span>
-                          <Badge className="text-xs" variant={r.position === 'FIRST' ? 'default' : r.position === 'SECOND' ? 'secondary' : 'outline'}>
+                      {detailParticipant.results.map((r) => (
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                        >
+                          <span className="text-sm">
+                            {getEventName(r.eventId)}
+                          </span>
+                          <Badge
+                            className="text-xs"
+                            variant={
+                              r.position === "FIRST"
+                                ? "default"
+                                : r.position === "SECOND"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
                             {r.position}
                           </Badge>
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-muted-foreground">No event results.</p>}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No event results.
+                    </p>
+                  )}
                 </div>
               </div>
             )}

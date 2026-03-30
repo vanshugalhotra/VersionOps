@@ -3,8 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute, PublicRoute, RbacRoute } from "./components/auth/RouteGuards";
+import {
+  ProtectedRoute,
+  PublicRoute,
+  RbacRoute,
+} from "./components/auth/RouteGuards";
 import Dashboard from "./pages/Dashboard";
+import ParticipantHome from "./pages/ParticipantHome";
 import Participants from "./pages/Participants";
 import AddParticipant from "./pages/AddParticipant";
 import Colleges from "./pages/Colleges";
@@ -13,8 +18,10 @@ import Events from "./pages/Events";
 import AddEvent from "./pages/AddEvent";
 import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
@@ -34,16 +41,66 @@ const App = () => (
               }
             />
             <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
+            {/* Public route — no auth required */}
+            <Route
+              path="/results"
+              element={
+                <AppLayout>
+                  <Results />
+                </AppLayout>
+              }
+            />
+
+            <Route
               path="/*"
               element={
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
                       <Route
+                        path="/home"
+                        element={
+                          <RbacRoute path="/home">
+                            <ParticipantHome />
+                          </RbacRoute>
+                        }
+                      />
+                      <Route
                         path="/"
                         element={
                           <RbacRoute path="/">
                             <Dashboard />
+                          </RbacRoute>
+                        }
+                      />
+                      <Route
+                        path="/leaderboard"
+                        element={
+                          <RbacRoute path="/leaderboard">
+                            <Leaderboard />
+                          </RbacRoute>
+                        }
+                      />
+                      <Route
+                        path="/events"
+                        element={
+                          <RbacRoute path="/events">
+                            <Events />
+                          </RbacRoute>
+                        }
+                      />
+                      <Route
+                        path="/colleges"
+                        element={
+                          <RbacRoute path="/colleges">
+                            <Colleges />
                           </RbacRoute>
                         }
                       />
@@ -64,10 +121,10 @@ const App = () => (
                         }
                       />
                       <Route
-                        path="/colleges"
+                        path="/users"
                         element={
-                          <RbacRoute path="/colleges">
-                            <Colleges />
+                          <RbacRoute path="/users">
+                            <Users />
                           </RbacRoute>
                         }
                       />
@@ -76,14 +133,6 @@ const App = () => (
                         element={
                           <RbacRoute path="/colleges/add">
                             <AddCollege />
-                          </RbacRoute>
-                        }
-                      />
-                      <Route
-                        path="/events"
-                        element={
-                          <RbacRoute path="/events">
-                            <Events />
                           </RbacRoute>
                         }
                       />
@@ -100,22 +149,6 @@ const App = () => (
                         element={
                           <RbacRoute path="/events/edit/:id">
                             <AddEvent />
-                          </RbacRoute>
-                        }
-                      />
-                      <Route
-                        path="/results"
-                        element={
-                          <RbacRoute path="/results">
-                            <Results />
-                          </RbacRoute>
-                        }
-                      />
-                      <Route
-                        path="/leaderboard"
-                        element={
-                          <RbacRoute path="/leaderboard">
-                            <Leaderboard />
                           </RbacRoute>
                         }
                       />

@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/gaurds/jwt-auth.gaurd';
 import { PermissionsGuard } from '../auth/gaurds/permission.gaurd';
 import { Permission } from '../auth/decorators/permission.decorator';
 import { PERMISSIONS } from '../auth/rbac/role-permissions.map';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Colleges')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -44,22 +45,24 @@ export class CollegeController {
   }
 
   // ────────────────────────────────────────────────
-  // GET ALL COLLEGES
+  // GET ALL COLLEGES (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.COLLEGE_READ)
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Get all colleges with filtering and pagination' })
+  @ApiOperation({
+    summary: 'Get all colleges with filtering and pagination (Public)',
+  })
   @ApiResponse({ status: 200, description: 'Colleges fetched successfully' })
   async findAll(@Query() query: QueryOptionsDto) {
     return this.collegeService.findAll(query);
   }
 
   // ────────────────────────────────────────────────
-  // GET ONE COLLEGE
+  // GET ONE COLLEGE (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.COLLEGE_READ)
+  @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Get a single college by ID' })
+  @ApiOperation({ summary: 'Get a single college by ID (Public)' })
   @ApiParam({
     name: 'id',
     description: 'College ID',

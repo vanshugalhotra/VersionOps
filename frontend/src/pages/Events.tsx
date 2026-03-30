@@ -1,11 +1,34 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ArrowLeft, Users, UserCheck, Pencil, Trash2, Copy, Save } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  ChevronRight, 
+  Users, 
+  Trophy, 
+  Edit3, 
+  CheckCircle2, 
+  AlertCircle,
+  Calendar,
+  MoreVertical,
+  ArrowRight,
+  ArrowLeft,
+  UserCheck,
+  Pencil,
+  Trash2,
+  Copy,
+  Save,
+  LayoutGrid,
+  List,
+  LogOut
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   AlertDialog,
@@ -30,7 +53,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { eventService, participantService, eventParticipationService, eventResultService, collegeService } from "@/api/services";
 import { FestEvent, EventParticipation, Participant, EventResult, College } from "@/api/types";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import {mapped_toast } from "@/lib/toast_map.ts";
 
 type Position = "FIRST" | "SECOND" | "THIRD";
 
@@ -43,7 +66,69 @@ type PendingChanges = {
   };
 };
 
+interface BulkCopyDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  events: FestEvent[];
+  onConfirm: (toEventId: number) => void;
+  disabled: boolean;
+}
+
+function BulkCopyDialog({ open, onOpenChange, events, onConfirm, disabled }: BulkCopyDialogProps) {
+  const [targetEventId, setTargetEventId] = useState<string>("");
+
+  const handleConfirm = () => {
+    if (targetEventId) {
+      void onConfirm(Number(targetEventId));
+    } else {
+      mapped_toast('Please select an event.', 'warning')
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 text-sm" disabled={disabled}>
+          <Copy className="h-4 w-4 mr-2" />
+          Copy to Event
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Copy Participants</DialogTitle>
+          <DialogDescription>
+            Select an event to copy the selected participants to.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <Select onValueChange={setTargetEventId} value={targetEventId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select an event..." />
+            </SelectTrigger>
+            <SelectContent>
+              {(events || []).map(event => (
+                <SelectItem key={event.id} value={String(event.id)}>
+                  {event.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={!targetEventId}>
+            Copy
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Events() {
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<"portfolio" | "manage">("portfolio");
+  
   const [events, setEvents] = useState<FestEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<FestEvent | null>(null);
@@ -323,7 +408,6 @@ export default function Events() {
           delete newDetails[participantId];
           return newDetails;
       });
-      // setSearchQuery("");
       await loadEventDetails(selectedEventId);
     } catch (error: any) {
         if (error?.response?.status === 403) {
@@ -442,7 +526,6 @@ export default function Events() {
           setResultsDenied(true);
           setResults([]);
         }
-
       }
     }
   };
@@ -561,263 +644,369 @@ export default function Events() {
   const participantsToShow = collegeFilter === "all"
     ? (baseList || [])
     : (baseList || []).filter(p => p.college?.code === collegeFilter);
-  
   const hasPendingChanges = Object.keys(pendingChanges.participations).length > 0;
 
   if (!selectedEventId) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Events</h2>
-          <p className="text-sm text-muted-foreground">{(events || []).length} events</p>
+      <div className="space-y-8 animate-fade-up">
+        {/* Editorial Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
+          <div className="relative">
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Events
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {(events || []).length ?? 0} events configured
+            </p>
+          </div>
+          
+          {user && (
+            <div className="flex items-center gap-2 bg-surface-low p-1.5 rounded-full border border-border/20 self-start md:self-auto shadow-2xl backdrop-blur-xl">
+                <Button 
+                variant={viewMode === "portfolio" ? "default" : "ghost"} 
+                size="sm" 
+                className={cn("h-9 px-4 text-sm font-medium transition-all", viewMode === "portfolio" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white")}
+                onClick={() => setViewMode("portfolio")}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Portfolio
+              </Button>
+              <Button 
+                variant={viewMode === "manage" ? "default" : "ghost"} 
+                size="sm" 
+                className={cn("h-9 px-4 text-sm font-medium transition-all", viewMode === "manage" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white")}
+                onClick={() => setViewMode("manage")}
+              >
+                <List className="h-4 w-4 mr-2" />
+                Manage
+              </Button>
+            </div>
+          )}
         </div>
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead>Event Name</TableHead>
-                <TableHead className="w-24">Team Size</TableHead>
-                <TableHead className="w-32">Participation Pts</TableHead>
-                <TableHead className="w-40">Prize Points (1/2/3)</TableHead>
-                <TableHead className="w-24">Roster</TableHead>
-                <TableHead className="w-24 text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(events || []).map((ev) => (
-                <TableRow key={ev.id}>
-                  <TableCell className="font-medium" onClick={() => setSelectedEventId(ev.id)}>{ev.name}</TableCell>
-                  <TableCell onClick={() => setSelectedEventId(ev.id)}>{ev.teamSize}</TableCell>
-                  <TableCell onClick={() => setSelectedEventId(ev.id)}>{ev.participationPoints}</TableCell>
-                  <TableCell className="font-mono text-sm" onClick={() => setSelectedEventId(ev.id)}>
-                    {ev.firstPrizePoints} / {ev.secondPrizePoints} / {ev.thirdPrizePoints}
-                  </TableCell>
-                  <TableCell onClick={() => setSelectedEventId(ev.id)}>
-                    <Badge variant="secondary" className="text-xs">
-                      <Users className="h-3 w-3 mr-1" />
-                      {ev.participations?.length || 0}
+
+        {viewMode === "portfolio" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+            {(events || []).map((ev) => (
+              <div 
+                key={ev.id}
+                className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 bg-surface border border-border hover:border-primary/30"
+                onClick={() => setSelectedEventId(ev.id)}
+              >
+                <div className="p-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-xs font-medium px-2 py-0.5">
+                      {ev.teamSize > 1 ? 'Team' : 'Solo'}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEditClick(ev); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the "{ev.name}" event.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => void deleteEvent(ev.id)}>
-                            Yes, delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+                    <span className="text-xs text-muted-foreground">
+                      {ev.participations?.length || 0} participants
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {ev.name}
+                  </h3>
+
+                  <div className="flex items-center gap-4 pt-2 border-t border-border/50">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">Points</span>
+                      <span className="text-sm font-mono font-medium">{ev.participationPoints}</span>
+                    </div>
+                    <div className="h-8 w-px bg-border/50" />
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">Prize</span>
+                      <span className="text-sm font-mono font-medium">{ev.firstPrizePoints}</span>
+                    </div>
+                    
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {user && (
+              <div 
+                className="group relative rounded-2xl border-2 border-dashed border-border hover:border-primary/50 transition-all duration-200 flex flex-col items-center justify-center gap-3 bg-transparent cursor-pointer min-h-[200px]"
+                onClick={() => navigate("/events/add")}
+              >
+                <div className="h-12 w-12 rounded-full bg-surface border border-border flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <Plus className="h-6 w-6 text-primary" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">Add Event</p>
+              </div>
+            )}
+          </div>
+        ) : (
+            <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-table-header">Event Name</TableHead>
+                  <TableHead className="text-table-header w-24">Team Size</TableHead>
+                  <TableHead className="text-table-header w-28">Points</TableHead>
+                  <TableHead className="text-table-header w-36">Prize (1st/2nd/3rd)</TableHead>
+                  <TableHead className="text-table-header w-24">Participants</TableHead>
+                  <TableHead className="text-table-header w-20 text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {(events || []).map((ev) => (
+                  <TableRow 
+                    key={ev.id} 
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="text-table-cell font-medium cursor-pointer" onClick={() => setSelectedEventId(ev.id)}>
+                      {ev.name}
+                    </TableCell>
+                    <TableCell className="text-table-cell cursor-pointer" onClick={() => setSelectedEventId(ev.id)}>{ev.teamSize}</TableCell>
+                    <TableCell className="cursor-pointer font-mono text-table-cell-sm" onClick={() => setSelectedEventId(ev.id)}>{ev.participationPoints}</TableCell>
+                    <TableCell className="cursor-pointer font-mono text-table-cell-sm" onClick={() => setSelectedEventId(ev.id)}>
+                      {ev.firstPrizePoints} / {ev.secondPrizePoints} / {ev.thirdPrizePoints}
+                    </TableCell>
+                    <TableCell className="cursor-pointer" onClick={() => setSelectedEventId(ev.id)}>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs font-medium">
+                        {ev.participations?.length || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors" onClick={(e) => { e.stopPropagation(); handleEditClick(ev); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={(e) => e.stopPropagation()}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete "{ev.name}". This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => void deleteEvent(ev.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => { setSelectedEventId(null); setSearchQuery(""); }}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold tracking-tight">{selectedEvent?.name || "Event"}</h2>
-          {!detailsDenied && (
-            <p className="text-sm text-muted-foreground">
-              Team size: {selectedEvent?.teamSize} · Participation pts: {selectedEvent?.participationPoints}
-            </p>
-          )}
+    <div className="space-y-6 pb-20">
+      {/* Header & Back Control */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => { setSelectedEventId(null); setSearchQuery(""); }} 
+            className="group flex items-center gap-2 hover:bg-primary/10 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium">Back to Events</span>
+          </Button>
+        </div>
+
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {selectedEvent?.name}
+          </h1>
+          
+          <div className="flex flex-wrap items-center gap-6 mt-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Team Size</span>
+              <span className="text-sm font-medium">{selectedEvent?.teamSize} {selectedEvent?.teamSize === 1 ? 'person' : 'people'}</span>
+            </div>
+            <div className="h-8 w-px bg-border hidden md:block" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Participation Points</span>
+              <span className="text-sm font-medium font-mono">{selectedEvent?.participationPoints}</span>
+            </div>
+            <div className="h-8 w-px bg-border hidden md:block" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Prize Points</span>
+              <span className="text-sm font-medium font-mono">{selectedEvent?.firstPrizePoints} / {selectedEvent?.secondPrizePoints} / {selectedEvent?.thirdPrizePoints}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {!detailsDenied && (
-        <div className="border rounded-lg p-4 bg-muted/30 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Team Size</p>
-            <p className="text-lg font-bold">{selectedEvent?.teamSize}</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-surface rounded-xl p-5 border border-border">
+            <p className="text-sm text-muted-foreground mb-1">Participants</p>
+            <p className="text-3xl font-semibold">{(roster || []).length}</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Present</p>
-            <p className="text-lg font-bold">{(roster || []).length}</p>
+          
+          <div className="bg-surface rounded-xl p-5 border border-border">
+            <p className="text-sm text-muted-foreground mb-1">1st Prize</p>
+            <p className="text-3xl font-semibold font-mono">{selectedEvent?.firstPrizePoints}</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Participation Pts</p>
-            <p className="text-lg font-bold">{selectedEvent?.participationPoints}</p>
+
+          <div className="bg-surface rounded-xl p-5 border border-border">
+            <p className="text-sm text-muted-foreground mb-1">2nd Prize</p>
+            <p className="text-3xl font-semibold font-mono">{selectedEvent?.secondPrizePoints}</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Prize Pts (1/2/3)</p>
-            <p className="text-lg font-bold font-mono">
-              {selectedEvent?.firstPrizePoints}/{selectedEvent?.secondPrizePoints}/{selectedEvent?.thirdPrizePoints}
-            </p>
+
+          <div className="bg-surface rounded-xl p-5 border border-border">
+            <p className="text-sm text-muted-foreground mb-1">3rd Prize</p>
+            <p className="text-3xl font-semibold font-mono">{selectedEvent?.thirdPrizePoints}</p>
           </div>
         </div>
       )}
 
-      {!participantsDenied && (
-        <>
-          <div className="border rounded-lg">
-            <div className="p-3 border-b bg-muted/30">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <UserCheck className="h-4 w-4" /> Mark Participant Present
-              </h3>
+      {/* Participants Section */}
+      {user && !participantsDenied && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">Add Participants</h2>
+              <p className="text-sm text-muted-foreground mt-1">Search and add participants to this event</p>
             </div>
-            <div className="p-3 space-y-3">
-              <div className="flex gap-2 flex-wrap">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name or ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 h-9 text-sm"
-                  />
-                </div>
-                <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                  <SelectTrigger className="w-28 h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Colleges</SelectItem>
-                    {(colleges || []).map((c) => (
-                      <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {/*<Select value={dummyFilter} onValueChange={setDummyFilter}>*/}
-                {/*  <SelectTrigger className="w-28 h-9 text-xs">*/}
-                {/*    <SelectValue placeholder="Dummy Filter" />*/}
-                {/*  </SelectTrigger>*/}
-                {/*  <SelectContent>*/}
-                {/*    <SelectItem value="all">All Dummy</SelectItem>*/}
-                {/*    <SelectItem value="assigned">Assigned</SelectItem>*/}
-                {/*    <SelectItem value="unassigned">Unassigned</SelectItem>*/}
-                {/*  </SelectContent>*/}
-                {/*</Select>*/}
+            
+            <div className="flex items-center gap-3">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 bg-background border-input"
+                />
               </div>
-
-              <div className="border rounded-md h-56 overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background">
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>College</TableHead>
-                      <TableHead className="w-24">Dummy ID</TableHead>
-                      <TableHead className="w-20">Team ID</TableHead>
-                      <TableHead className="w-20"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {participantsToShow.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-4 text-sm">
-                          {searchQuery.trim() ? "No participants found." : "No participants to show."}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      participantsToShow.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-mono text-xs">{p.participantId}</TableCell>
-                          <TableCell className="text-sm">{p.name}</TableCell>
-                          <TableCell className="text-sm">{p.college?.code}</TableCell>
-                          <TableCell>
-                            <Input
-                              className="h-7 w-20 text-xs font-mono"
-                              placeholder="Opt."
-                              value={checkInDetails[p.id]?.dummyId || ''}
-                              onChange={(e) => handleCheckInChange(p.id, 'dummyId', e.target.value)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              className="h-7 w-16 text-xs font-mono"
-                              placeholder="Opt."
-                              value={checkInDetails[p.id]?.teamId || ''}
-                              onChange={(e) => handleCheckInChange(p.id, 'teamId', e.target.value)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Button size="icon" variant="default" className="h-7 w-7" onClick={() => void markPresent(p.id)}>
-                              <UserCheck className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              <Select value={collegeFilter} onValueChange={setCollegeFilter}>
+                <SelectTrigger className="w-32 h-10">
+                  <SelectValue placeholder="All colleges" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All colleges</SelectItem>
+                  {(colleges || []).map((c) => (
+                    <SelectItem key={c.id} value={c.code}>{c.name} ({c.code})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="border rounded-lg">
-            <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-sm font-semibold">Present Participants ({filteredRoster.length})</h3>
-              <div className="flex items-center gap-2">
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-sm font-medium">ID</TableHead>
+                  <TableHead className="text-sm font-medium">Name</TableHead>
+                  <TableHead className="text-sm font-medium">College</TableHead>
+                  <TableHead className="text-sm font-medium w-24">Dummy ID</TableHead>
+                  <TableHead className="text-sm font-medium w-24">Team ID</TableHead>
+                  <TableHead className="text-sm font-medium w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {participantsToShow.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                      {searchQuery.trim() ? "No participants found matching your search." : "No participants available to add."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  participantsToShow.map((p) => (
+                    <TableRow key={p.id} className="hover:bg-muted/50">
+                      <TableCell className="font-mono text-sm text-muted-foreground">{p.participantId}</TableCell>
+                      <TableCell className="font-medium">{p.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{p.college?.code}</TableCell>
+                      <TableCell>
+                        <Input
+                          className="h-8 text-sm font-mono"
+                          placeholder="Optional"
+                          value={checkInDetails[p.id]?.dummyId || ''}
+                          onChange={(e) => handleCheckInChange(p.id, 'dummyId', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          className="h-8 text-sm font-mono"
+                          placeholder="Optional"
+                          value={checkInDetails[p.id]?.teamId || ''}
+                          onChange={(e) => handleCheckInChange(p.id, 'teamId', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => void markPresent(p.id)}
+                        >
+                          <UserCheck className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Participant List */}
+          <div className="space-y-6 pt-6 border-t border-border">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Participants ({filteredRoster.length})</h2>
+                <p className="text-sm text-muted-foreground mt-1">Participants registered for this event</p>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="relative w-56">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search participants..."
+                    value={rosterSearchQuery}
+                    onChange={(e) => setRosterSearchQuery(e.target.value)}
+                    className="pl-10 h-10"
+                  />
+                </div>
                 <Button
+                  variant="ghost"
                   size="sm"
-                  className="h-8 text-xs"
                   disabled={!hasPendingChanges}
                   onClick={() => void handleParticipationUpdate()}
                 >
-                  <Save className="h-3.5 w-3.5 mr-1.5" />
-                  Update Details
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
                 </Button>
-                <BulkCopyDialog
-                  open={isBulkCopyDialogOpen}
-                  onOpenChange={setIsBulkCopyDialogOpen}
-                  events={(events || []).filter(e => e.id !== selectedEventId)}
-                  onConfirm={handleBulkCopy}
-                  disabled={selectedParticipations.length === 0}
-                />
-                <div className="relative w-64">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search in roster..."
-                    value={rosterSearchQuery}
-                    onChange={(e) => setRosterSearchQuery(e.target.value)}
-                    className="pl-8 h-8 text-sm"
-                  />
-                </div>
               </div>
             </div>
-            <div className="h-56 overflow-auto">
+
+            <div className="rounded-xl border border-border overflow-hidden">
               <Table>
-                <TableHeader className="sticky top-0 bg-background">
-                  <TableRow>
-                    <TableHead className="w-10">
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-12 p-4">
                       <Checkbox
                         checked={selectedParticipations.length === filteredRoster.length && filteredRoster.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>College</TableHead>
-                    <TableHead>HackerEarth ID</TableHead>
-                    <TableHead>Dummy ID</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead className="w-20"></TableHead>
+                    <TableHead className="text-sm font-medium p-4">ID</TableHead>
+                    <TableHead className="text-sm font-medium p-4">Name</TableHead>
+                    <TableHead className="text-sm font-medium p-4">College</TableHead>
+                    <TableHead className="text-sm font-medium p-4">Dummy ID</TableHead>
+                    <TableHead className="text-sm font-medium p-4">Team ID</TableHead>
+                    <TableHead className="text-sm font-medium p-4">Position</TableHead>
+                    <TableHead className="text-sm font-medium p-4 w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -828,55 +1017,58 @@ export default function Events() {
                       const teamIdValue = pendingParticipation.teamId !== undefined ? pendingParticipation.teamId : (r.teamId || '');
 
                       return (
-                        <TableRow key={r.id} data-state={selectedParticipations.includes(r.id) && "selected"}>
-                          <TableCell>
+                        <TableRow 
+                          key={r.id} 
+                          data-state={selectedParticipations.includes(r.id) && "selected"} 
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell className="p-4">
                             <Checkbox
                               checked={selectedParticipations.includes(r.id)}
                               onCheckedChange={() => toggleSelectOne(r.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{r.participant?.participantId}</TableCell>
-                          <TableCell className="text-sm">{r.participant?.name}</TableCell>
-                          <TableCell className="text-sm">{r.participant?.college?.code}</TableCell>
-                          <TableCell className="font-mono text-xs">{r.participant?.hackerearthUser}</TableCell>
-                          <TableCell>
+                          <TableCell className="p-4 font-mono text-sm text-muted-foreground">{r.participant?.participantId}</TableCell>
+                          <TableCell className="p-4 font-medium">{r.participant?.name}</TableCell>
+                          <TableCell className="p-4 text-muted-foreground">{r.participant?.college?.code}</TableCell>
+                          <TableCell className="p-4">
                             <Input
-                              className="h-7 w-20 text-xs font-mono"
+                              className="h-8 text-sm font-mono"
                               value={dummyIdValue}
                               onChange={(e) => handleFieldChange(r.id, 'dummyId', e.target.value)}
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-4">
                             <Input
-                              className="h-7 w-16 text-xs font-mono"
+                              className="h-8 text-sm font-mono"
                               value={teamIdValue}
                               onChange={(e) => handleFieldChange(r.id, 'teamId', e.target.value)}
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-4">
                             {resultsDenied ? (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <span className="text-sm text-muted-foreground">—</span>
                             ) : (
                                 <Select
                                     value={result?.position || "none"}
                                     onValueChange={(val) => void handlePositionChange(r.participantId, val === "none" ? null : val as Position)}
                                 >
-                                    <SelectTrigger className="h-7 w-24 text-xs">
-                                        <SelectValue />
+                                    <SelectTrigger className="h-8 w-24 text-sm">
+                                        <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">—</SelectItem>
-                                        <SelectItem value="FIRST">🥇 1st</SelectItem>
-                                        <SelectItem value="SECOND">🥈 2nd</SelectItem>
-                                        <SelectItem value="THIRD">🥉 3rd</SelectItem>
+                                        <SelectItem value="FIRST">1st</SelectItem>
+                                        <SelectItem value="SECOND">2nd</SelectItem>
+                                        <SelectItem value="THIRD">3rd</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-4 text-right">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -889,7 +1081,9 @@ export default function Events() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => void removeFromEvent(r.id)}>Remove</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => void removeFromEvent(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Remove
+                                  </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -899,74 +1093,38 @@ export default function Events() {
                   })}
                   {filteredRoster.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                        {(roster || []).length > 0 ? "No participants found in your search." : "No participants marked present yet."}
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                        <p className="text-sm">
+                          {(roster || []).length > 0 ? "No participants found in your search." : "No participants added yet."}
+                        </p>
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
+            {/* Action Bar */}
+            {selectedParticipations.length > 0 && (
+              <div className="sticky bottom-6 left-0 right-0 flex justify-center z-50 px-6">
+                <div className="bg-surface border border-border px-4 py-2 rounded-lg flex items-center gap-4 shadow-lg">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedParticipations.length} selected
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <BulkCopyDialog
+                      open={isBulkCopyDialogOpen}
+                      onOpenChange={setIsBulkCopyDialogOpen}
+                      events={(events || []).filter(e => e.id !== selectedEventId)}
+                      onConfirm={handleBulkCopy}
+                      disabled={selectedParticipations.length === 0}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
-  );
-}
-
-interface BulkCopyDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  events: FestEvent[];
-  onConfirm: (toEventId: number) => void;
-  disabled: boolean;
-}
-
-function BulkCopyDialog({ open, onOpenChange, events, onConfirm, disabled }: BulkCopyDialogProps) {
-  const [targetEventId, setTargetEventId] = useState<string>("");
-
-  const handleConfirm = () => {
-    if (targetEventId) {
-      void onConfirm(Number(targetEventId));
-    } else {
-      mapped_toast('Please select a target event.', 'warning')
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 text-xs" disabled={disabled}>
-          <Copy className="h-3.5 w-3.5 mr-1.5" />
-          Bulk Copy
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Bulk Copy Participants</DialogTitle>
-          <DialogDescription>
-            Select a target event to copy the selected participants to.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          <Select onValueChange={setTargetEventId} value={targetEventId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select an event..." />
-            </SelectTrigger>
-            <SelectContent>
-              {(events || []).map(event => (
-                <SelectItem key={event.id} value={String(event.id)}>
-                  {event.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleConfirm} disabled={!targetEventId}>Confirm Copy</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

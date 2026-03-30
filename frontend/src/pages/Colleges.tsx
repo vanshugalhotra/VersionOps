@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Eye, Trash2, Pencil, PlusCircle } from "lucide-react";
+import { Eye, Trash2, Pencil, PlusCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { collegeService } from "@/api/services";
 import { College } from "@/api/types";
- ;
+import { useAuth } from "@/hooks/useAuth";
+import { hasPermission, PERMISSIONS } from "@/lib/rbac";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,15 +21,21 @@ import {
 import EditCollegeDialog from "./EditCollegeDialog";
 import AdjustPointsDialog from "./AdjustPointsDialog";
 import { Input } from "@/components/ui/input";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import { mapped_toast } from "@/lib/toast_map.ts";
 
 export default function Colleges() {
+  const { user } = useAuth();
+  const role = user?.role;
+  const canEdit = hasPermission(role, PERMISSIONS.COLLEGE_UPDATE);
+  const canDelete = hasPermission(role, PERMISSIONS.COLLEGE_DELETE);
+
   const [colleges, setColleges] = useState<College[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<College | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCollege, setEditingCollege] = useState<College | null>(null);
   const [adjustingCollege, setAdjustingCollege] = useState<College | null>(null);
   const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
   useEffect(() => {
     void loadColleges();
@@ -38,7 +45,7 @@ export default function Colleges() {
     try {
       const response = await collegeService.getAll({ take: 100, includeRelations: true, search });
       setColleges(response.items);
-    } catch (error) {
+    } catch (error: any) {
       if (error?.response?.status === 403) {
         mapped_toast('You do not have access to colleges data.', 'warning', true)
         return;
@@ -53,7 +60,7 @@ export default function Colleges() {
       const details = await collegeService.getById(college.id, true);
       setSelectedCollege(details);
       setIsSheetOpen(true);
-    } catch (error) {
+    } catch (error: any) {
       if (error?.response?.status === 403) {
         mapped_toast('You do not have permission to perform this action.', 'warning')
         return;
@@ -76,9 +83,9 @@ export default function Colleges() {
   const deleteCollege = async (collegeId: number) => {
     try {
       await collegeService.delete(collegeId);
-      console.log("College deleted successfully");
+      mapped_toast('College deleted successfully.', 'success');
       void loadColleges();
-    } catch (error) {
+    } catch (error: any) {
       if (error?.response?.status === 403) {
         mapped_toast('You do not have permission to perform this action.', 'warning')
         return;
@@ -90,11 +97,68 @@ export default function Colleges() {
 
   const getScore = (c: College, key: string) => c.score?.[key] || 0;
 
+  const handleSort = (key: string) => {
+    setSortConfig((current) => ({
+      key,
+      direction: current?.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedColleges = useMemo(() => {
+    if (!sortConfig) return colleges;
+    return [...colleges].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+
+      switch (sortConfig.key) {
+        case "code":
+          aVal = a.code || "";
+          bVal = b.code || "";
+          break;
+        case "name":
+          aVal = a.name || "";
+          bVal = b.name || "";
+          break;
+        case "participants":
+          aVal = a.participantCount || 0;
+          bVal = b.participantCount || 0;
+          break;
+        case "firstPrizes":
+          aVal = getScore(a, "firstPrizes");
+          bVal = getScore(b, "firstPrizes");
+          break;
+        case "secondPrizes":
+          aVal = getScore(a, "secondPrizes");
+          bVal = getScore(b, "secondPrizes");
+          break;
+        case "thirdPrizes":
+          aVal = getScore(a, "thirdPrizes");
+          bVal = getScore(b, "thirdPrizes");
+          break;
+        case "totalPoints":
+          aVal = getScore(a, "totalPoints");
+          bVal = getScore(b, "totalPoints");
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      return sortConfig.direction === "asc"
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    });
+  }, [colleges, sortConfig]);
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Colleges</h2>
-        <p className="text-sm text-muted-foreground">{colleges.length} registered</p>
+        <h2 className="text-heading">Colleges</h2>
+        <p className="text-body text-muted-foreground">{colleges.length} registered</p>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -106,40 +170,94 @@ export default function Colleges() {
         />
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="w-full overflow-x-auto pb-8">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-20">Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead className="w-32">Participants</TableHead>
-              <TableHead className="w-16 text-center">🥇</TableHead>
-              <TableHead className="w-16 text-center">🥈</TableHead>
-              <TableHead className="w-16 text-center">🥉</TableHead>
-              <TableHead className="w-28">Points</TableHead>
-              <TableHead className="w-40 text-right">Actions</TableHead>
+            <TableRow className="hover:bg-transparent bg-transparent border-none shadow-none">
+              <TableHead className="w-20 text-table-header">
+                <button onClick={() => handleSort("code")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  Code
+                  {sortConfig?.key === "code" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="text-table-header">
+                <button onClick={() => handleSort("name")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  Name
+                  {sortConfig?.key === "name" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-32 text-table-header">
+                <button onClick={() => handleSort("participants")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  Participants
+                  {sortConfig?.key === "participants" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-16 text-center text-table-header">
+                <button onClick={() => handleSort("firstPrizes")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  1st
+                  {sortConfig?.key === "firstPrizes" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-16 text-center text-table-header">
+                <button onClick={() => handleSort("secondPrizes")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  2nd
+                  {sortConfig?.key === "secondPrizes" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-16 text-center text-table-header">
+                <button onClick={() => handleSort("thirdPrizes")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  3rd
+                  {sortConfig?.key === "thirdPrizes" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-28 text-table-header">
+                <button onClick={() => handleSort("totalPoints")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  Points
+                  {sortConfig?.key === "totalPoints" ? (
+                    sortConfig.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                  ) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+              </TableHead>
+              <TableHead className="w-40 text-right text-table-header">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {colleges.map((c) => (
+            {sortedColleges.map((c) => (
               <TableRow key={c.id}>
-                <TableCell className="font-mono text-xs font-medium">{c.code}</TableCell>
-                <TableCell className="font-medium">{c.name}</TableCell>
-                <TableCell>{c.participantCount}</TableCell>
-                <TableCell className="font-mono font-semibold text-center">{getScore(c, "firstPrizes")}</TableCell>
-                <TableCell className="font-mono font-semibold text-center">{getScore(c, "secondPrizes")}</TableCell>
-                <TableCell className="font-mono font-semibold text-center">{getScore(c, "thirdPrizes")}</TableCell>
-                <TableCell className="font-mono font-semibold">{getScore(c, "totalPoints")}</TableCell>
+                <TableCell className="font-mono text-table-cell-sm">{c.code}</TableCell>
+                <TableCell className="text-table-cell">{c.name}</TableCell>
+                <TableCell className="text-table-cell">{c.participantCount}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center font-semibold">{getScore(c, "firstPrizes")}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center font-semibold">{getScore(c, "secondPrizes")}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center font-semibold">{getScore(c, "thirdPrizes")}</TableCell>
+                <TableCell className="font-mono text-table-cell font-semibold">{getScore(c, "totalPoints")}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDetails(c)}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setAdjustingCollege(c)}>
-                    <PlusCircle className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingCollege(c)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  {canEdit && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setAdjustingCollege(c)}>
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canEdit && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingCollege(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
@@ -159,6 +277,7 @@ export default function Colleges() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -186,26 +305,26 @@ export default function Colleges() {
                 <SheetTitle>{selectedCollege.name}</SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="stat-card text-center">
-                    <p className="text-muted-foreground text-xs">Points</p>
-                    <p className="text-xl font-bold">{getScore(selectedCollege, "totalPoints")}</p>
+                <div className="flex items-center divide-x divide-border">
+                  <div className="flex-1 text-center py-2">
+                    <p className="text-sm text-muted-foreground">Points</p>
+                    <p className="text-xl font-semibold font-mono">{getScore(selectedCollege, "totalPoints")}</p>
                   </div>
-                  <div className="stat-card text-center">
-                    <p className="text-muted-foreground text-xs">Participants</p>
-                    <p className="text-xl font-bold">{selectedCollege.participantCount}</p>
+                  <div className="flex-1 text-center py-2">
+                    <p className="text-sm text-muted-foreground">Participants</p>
+                    <p className="text-xl font-semibold font-mono">{selectedCollege.participantCount}</p>
                   </div>
-                  <div className="stat-card text-center">
-                    <p className="text-muted-foreground text-xs">Prizes</p>
-                    <p className="text-xl font-bold">
+                  <div className="flex-1 text-center py-2">
+                    <p className="text-sm text-muted-foreground">Total Prizes</p>
+                    <p className="text-xl font-semibold font-mono">
                       {(getScore(selectedCollege, "firstPrizes") || 0) +
                         (getScore(selectedCollege, "secondPrizes") || 0) +
                         (getScore(selectedCollege, "thirdPrizes") || 0)}
                     </p>
                   </div>
                 </div>
-                <h4 className="font-semibold text-sm mt-4">Participants from {selectedCollege.code}</h4>
-                <div className="border rounded-lg max-h-[400px] overflow-auto">
+                <h4 className="text-label mt-4">Participants from {selectedCollege.code}</h4>
+                <div className="w-full max-h-[400px] overflow-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

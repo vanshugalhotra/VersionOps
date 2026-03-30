@@ -2,15 +2,22 @@ import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, Trophy, Medal } from "lucide-react";
 import { leaderboardService } from "@/api/services";
 import { LeaderboardEntry } from "@/api/types";
 import { cn } from "@/lib/utils";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import { mapped_toast } from "@/lib/toast_map.ts";
+
+const MEDAL = [
+  { icon: <Trophy className="h-4 w-4 text-yellow-400" />, bg: "bg-yellow-400/10 border border-yellow-400/20", text: "text-yellow-400" },
+  { icon: <Medal className="h-4 w-4 text-zinc-300" />,   bg: "bg-zinc-300/10 border border-zinc-300/20",   text: "text-zinc-300"   },
+  { icon: <Medal className="h-4 w-4 text-amber-600" />,  bg: "bg-amber-600/10 border border-amber-600/20",  text: "text-amber-600"  },
+];
 
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [search, setSearch] = useState("");
+  const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
     void loadLeaderboard();
@@ -18,15 +25,18 @@ export default function Leaderboard() {
 
   const loadLeaderboard = async () => {
     try {
-      const response =
-          await leaderboardService.get(
-              { take: 100, includeRelations: true, suppressErrorToast: true, suppressRedirect: true, suppressForbiddenRedirect: true });
+      const response = await leaderboardService.get({
+        take: 100,
+        includeRelations: true,
+        suppressErrorToast: true,
+        suppressRedirect: true,
+        suppressForbiddenRedirect: true,
+      });
       setLeaderboard(response.items);
-    } catch (error) {
-      if(error.message === "Unauthorized" || error.message === "Forbidden"){
-        mapped_toast('you do have access to leaderboard', 'warning', true)
-      }
-      else {
+    } catch (error: unknown) {
+      if ((error as any)?.message === "Unauthorized" || (error as any)?.message === "Forbidden") {
+        mapped_toast("you do have access to leaderboard", "warning", true);
+      } else {
         mapped_toast("Failed to load leaderboard", "error");
         console.error("Failed to load leaderboard", error);
       }
@@ -34,110 +44,102 @@ export default function Leaderboard() {
   };
 
   const recalculate = async () => {
+    setRecalculating(true);
     try {
       await leaderboardService.recalculate();
       mapped_toast("Leaderboard recalculated", "success");
-      void loadLeaderboard();
-    } catch (error) {
+      await loadLeaderboard();
+    } catch (error: unknown) {
       mapped_toast("Failed to recalculate leaderboard", "error");
       console.error("Failed to recalculate leaderboard", error);
+    } finally {
+      setRecalculating(false);
     }
   };
 
   const filtered = leaderboard.filter((entry) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      entry.college?.name.toLowerCase().includes(q) ||
-      entry.college?.code.toLowerCase().includes(q)
-    );
+    return entry.college?.name.toLowerCase().includes(q) || entry.college?.code.toLowerCase().includes(q);
   });
+
+  const top3 = filtered.slice(0, 3);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#6A0DAD] to-[#1E90FF] bg-clip-text text-transparent">Leaderboard</h2>
-          <p className="text-sm text-muted-foreground">College rankings and performance</p>
+          <h2 className="text-heading">Leaderboard</h2>
+          <p className="text-body text-muted-foreground mt-1">{leaderboard.length} colleges ranked</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={recalculate}
-          className="mr-12 border-[#6A0DAD] text-[#6A0DAD] hover:bg-[#6A0DAD] hover:text-white transition-all duration-300"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" /> Recalculate
+        <Button variant="outline" onClick={recalculate} disabled={recalculating}>
+          <RefreshCw className={cn("mr-2 h-4 w-4", recalculating && "animate-spin")} />
+          Recalculate
         </Button>
       </div>
 
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1E90FF]" />
-        <Input
-          placeholder="Filter colleges..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 border-[#1E90FF]/30 focus-visible:ring-[#1E90FF]"
-        />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Filter colleges..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      <div className="border border-[#1E90FF]/20 rounded-xl overflow-hidden shadow-lg shadow-purple-500/5 bg-card/50 backdrop-blur-sm">
+      {/* Top 3 podium cards */}
+      {!search && top3.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {top3.map((entry, i) => (
+            <div key={entry.collegeId} className={cn("rounded-lg p-4 flex flex-col gap-2", MEDAL[i].bg)}>
+              <div className="flex items-center justify-between">
+                <span className={cn("font-semibold", MEDAL[i].text)}>
+                  {i === 0 ? "1st" : i === 1 ? "2nd" : "3rd"}
+                </span>
+                <span className={cn("font-mono text-metric font-bold", MEDAL[i].text)}>{entry.totalPoints}</span>
+              </div>
+              <div>
+                <p className="text-table-cell font-medium">{entry.college?.name}</p>
+                <p className="text-table-cell-sm">{entry.college?.code}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="w-full overflow-x-auto pb-8">
         <Table>
-          <TableHeader>
-            <TableRow className="bg-[#6A0DAD]/5 hover:bg-[#6A0DAD]/10 transition-colors">
-              <TableHead className="w-16 font-bold text-[#6A0DAD]">Rank</TableHead>
-              <TableHead className="font-bold text-[#6A0DAD]">College</TableHead>
-              <TableHead className="w-32 font-bold text-[#6A0DAD]">Total Points</TableHead>
-              <TableHead className="w-20 text-center">🥇</TableHead>
-              <TableHead className="w-20 text-center">🥈</TableHead>
-              <TableHead className="w-20 text-center">🥉</TableHead>
-            </TableRow>
-          </TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16 text-table-header">Rank</TableHead>
+                <TableHead className="text-table-header">College</TableHead>
+                <TableHead className="text-table-header text-right">Points</TableHead>
+                <TableHead className="text-table-header text-center">1st</TableHead>
+                <TableHead className="text-table-header text-center">2nd</TableHead>
+                <TableHead className="text-table-header text-center">3rd</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
-            {filtered.map((entry, i) => (
-              <TableRow
-                key={entry.collegeId}
-                className={cn(
-                  "transition-all duration-200 hover:bg-[#1E90FF]/5 group",
-                  i === 0
-                    ? "bg-yellow-500/5"
-                    : i === 1
-                    ? "bg-slate-500/5"
-                    : i === 2
-                    ? "bg-orange-500/5"
-                    : ""
-                )}
-              >
+            {filtered.slice(search ? undefined : 3).map((entry, i) => (
+              <TableRow key={entry.collegeId}>
                 <TableCell>
-                  <span
-                    className={cn(
-                      "inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold shadow-sm transition-transform group-hover:scale-110",
-                      i === 0
-                        ? "bg-yellow-500/20 text-yellow-600 border border-yellow-500/30"
-                        : i === 1
-                        ? "bg-slate-500/20 text-slate-600 border border-slate-500/30"
-                        : i === 2
-                        ? "bg-orange-500/20 text-orange-600 border border-orange-500/30"
-                        : "bg-[#6A0DAD]/10 text-[#6A0DAD] border border-[#6A0DAD]/20"
-                    )}
-                  >
-                    {i + 1}
+                  <span className={cn(
+                    "inline-flex items-center justify-center w-6 h-6 rounded text-sm font-medium",
+                    entry.totalPoints > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground border"
+                  )}>
+                    {filtered.indexOf(entry) + 1}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div>
-                    <p className="font-semibold text-foreground group-hover:text-[#6A0DAD] transition-colors">{entry.college?.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{entry.college?.code}</p>
-                  </div>
+                  <p className="text-table-cell font-medium">{entry.college?.name}</p>
+                  <p className="text-table-cell-sm">{entry.college?.code}</p>
                 </TableCell>
-                <TableCell className="font-mono font-bold text-xl text-[#1E90FF]">{entry.totalPoints}</TableCell>
-                <TableCell className="font-mono text-center text-foreground/80">{entry.firstPrizes}</TableCell>
-                <TableCell className="font-mono text-center text-foreground/80">{entry.secondPrizes}</TableCell>
-                <TableCell className="font-mono text-center text-foreground/80">{entry.thirdPrizes}</TableCell>
+                <TableCell className="font-mono text-table-cell text-right">{entry.totalPoints}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center">{entry.firstPrizes}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center">{entry.secondPrizes}</TableCell>
+                <TableCell className="font-mono text-table-cell text-center">{entry.thirdPrizes}</TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                  No colleges found
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  {search ? "No colleges match your search" : "No colleges yet"}
                 </TableCell>
               </TableRow>
             )}

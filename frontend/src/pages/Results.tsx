@@ -1,10 +1,34 @@
 import { useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { eventService, eventParticipationService, eventResultService } from "@/api/services";
 import { FestEvent, EventParticipation, EventResult } from "@/api/types";
-import { Badge } from "@/components/ui/badge";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import { mapped_toast } from "@/lib/toast_map.ts";
+import { cn } from "@/lib/utils";
+import { Trophy, Medal } from "lucide-react";
+
+const POSITIONS: { key: "FIRST" | "SECOND" | "THIRD"; label: string; icon: React.ReactNode; card: string; rank: string }[] = [
+  {
+    key: "FIRST",
+    label: "1st Place",
+    icon: <Trophy className="h-5 w-5 text-yellow-400" />,
+    card: "bg-yellow-400/10 border border-yellow-400/25",
+    rank: "text-yellow-400",
+  },
+  {
+    key: "SECOND",
+    label: "2nd Place",
+    icon: <Medal className="h-5 w-5 text-zinc-300" />,
+    card: "bg-zinc-300/10 border border-zinc-300/20",
+    rank: "text-zinc-300",
+  },
+  {
+    key: "THIRD",
+    label: "3rd Place",
+    icon: <Medal className="h-5 w-5 text-amber-600" />,
+    card: "bg-amber-600/10 border border-amber-600/20",
+    rank: "text-amber-600",
+  },
+];
 
 export default function Results() {
   const [events, setEvents] = useState<FestEvent[]>([]);
@@ -29,81 +53,56 @@ export default function Results() {
     try {
       const response = await eventService.getAll({ take: 100 });
       setEvents(response.items);
-    } catch (error) {
-      if((error as any)?.response?.status === 403) {
-        mapped_toast('You do not have access to events data.', 'warning', true)
+    } catch (error: unknown) {
+      if ((error as any)?.response?.status === 403) {
+        mapped_toast("You do not have access to events data.", "warning", true);
         return;
       }
-      mapped_toast('Failed to load events.', 'error')
-      console.error("Failed to load events", error)
+      mapped_toast("Failed to load events.", "error");
+      console.error("Failed to load events", error);
     }
   };
 
   const loadEventData = async (eventId: number) => {
     try {
-      const resultsRes = await eventResultService.getAll({ 
-        filters: JSON.stringify({ eventId, position: { in: ['FIRST', 'SECOND', 'THIRD'] } }), 
-        includeRelations: true, 
-        take: 3 
+      const resultsRes = await eventResultService.getAll({
+        filters: JSON.stringify({ eventId, position: { in: ["FIRST", "SECOND", "THIRD"] } }),
+        includeRelations: true,
+        take: 3,
       });
-      
-      const participantIds = resultsRes.items.map(r => r.participantId);
-      
+
+      const participantIds = resultsRes.items.map((r) => r.participantId);
+
       if (participantIds.length > 0) {
-        const partsRes = await eventParticipationService.getAll({ 
-          filters: JSON.stringify({ eventId, participantId: { in: participantIds } }), 
-          includeRelations: true, 
-          take: 3 
+        const partsRes = await eventParticipationService.getAll({
+          filters: JSON.stringify({ eventId, participantId: { in: participantIds } }),
+          includeRelations: true,
+          take: 3,
         });
         setParticipations(partsRes.items);
       } else {
         setParticipations([]);
       }
-      
+
       setResults(resultsRes.items);
-    } catch (error) {
-      if((error as any)?.response?.status === 403) {
-        mapped_toast('You do not have access to event data.', 'warning', true)
+    } catch (error: unknown) {
+      if ((error as any)?.response?.status === 403) {
+        mapped_toast("You do not have access to event data.", "warning", true);
         return;
       }
-      mapped_toast('Failed to load event data.', 'error')
-      console.error("Failed to load event data");
+      mapped_toast("Failed to load event data.", "error");
+      console.error("Failed to load event data", error);
     }
   };
 
-  const getPositionBadge = (position?: "FIRST" | "SECOND" | "THIRD") => {
-    switch (position) {
-      case 'FIRST':
-        return <Badge className="bg-yellow-500 text-white">🥇 First</Badge>;
-      case 'SECOND':
-        return <Badge className="bg-gray-400 text-white">🥈 Second</Badge>;
-      case 'THIRD':
-        return <Badge className="bg-yellow-700 text-white">🥉 Third</Badge>;
-      default:
-        return <Badge variant="outline">-</Badge>;
-    }
-  };
-
-  const positionOrder: { [key: string]: number } = {
-    'FIRST': 1,
-    'SECOND': 2,
-    'THIRD': 3,
-  };
-
-  const sortedParticipations = [...participations].sort((a, b) => {
-    const resultA = results.find(r => r.participantId === a.participantId);
-    const resultB = results.find(r => r.participantId === b.participantId);
-    const posA = resultA ? positionOrder[resultA.position] : 4;
-    const posB = resultB ? positionOrder[resultB.position] : 4;
-    return posA - posB;
-  });
+  const selectedEvent = events.find((e) => e.id === parseInt(selectedEventId));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Results</h2>
-          <p className="text-sm text-muted-foreground">View event winners</p>
+          <h2 className="text-heading">Results</h2>
+          <p className="text-body text-muted-foreground mt-1">Event winners</p>
         </div>
       </div>
 
@@ -121,37 +120,44 @@ export default function Results() {
       </div>
 
       {selectedEventId && (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead>Name</TableHead>
-                <TableHead>College</TableHead>
-                <TableHead className="w-36">Position</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedParticipations.map((p) => {
-                const result = results.find(r => r.participantId === p.participantId);
+        <div className="space-y-4">
+          {selectedEvent && (
+            <p className="text-sm text-muted-foreground font-medium">{selectedEvent.name}</p>
+          )}
+
+          {results.length === 0 ? (
+            <div className="flex items-center justify-center h-40 rounded-xl border border-dashed text-muted-foreground text-sm">
+              No results recorded for this event yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {POSITIONS.map(({ key, label, icon, card, rank }) => {
+                const result = results.find((r) => r.position === key);
+                const participation = result
+                  ? participations.find((p) => p.participantId === result.participantId)
+                  : null;
+                const participant = result?.participant ?? participation?.participant;
+
                 return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.participant?.name}</TableCell>
-                    <TableCell>{p.participant?.college?.code}</TableCell>
-                    <TableCell>
-                      {getPositionBadge(result?.position)}
-                    </TableCell>
-                  </TableRow>
+                  <div key={key} className={cn("rounded-xl p-5 flex flex-col gap-3", card)}>
+                    <div className="flex items-center gap-2">
+                      {icon}
+                      <span className={cn("text-xs font-bold uppercase tracking-widest", rank)}>{label}</span>
+                    </div>
+                    {participant ? (
+                      <div>
+                        <p className="font-semibold text-white text-base leading-tight">{participant.name}</p>
+                        <p className="text-xs text-[#bcc9c5] mt-0.5">{participant.college?.name}</p>
+                        <p className="text-xs text-[#bcc9c5] font-mono">{participant.college?.code}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not assigned</p>
+                    )}
+                  </div>
                 );
               })}
-              {participations.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    No results for this event yet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+            </div>
+          )}
         </div>
       )}
     </div>

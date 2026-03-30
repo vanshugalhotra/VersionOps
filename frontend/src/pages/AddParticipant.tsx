@@ -18,14 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { participantService, collegeService } from "@/api/services";
- ;
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { College } from "@/api/types";
 import { Upload } from "lucide-react";
-import {mapped_toast} from "@/lib/toast_map.ts";
+import { mapped_toast } from "@/lib/toast_map.ts";
 
 const yearEnum = z.enum(["ONE", "TWO"]);
 
@@ -67,10 +66,17 @@ export default function AddParticipant() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await participantService.create(values);
-      console.log("Participant created successfully!");
+      mapped_toast("Participant created successfully!", "success");
       navigate("/participants");
     } catch (error: any) {
-      console.error(error.message || "Failed to create participant");
+      if (error?.response?.status === 403) {
+        mapped_toast(
+          "You do not have permission to perform this action.",
+          "warning",
+        );
+        return;
+      }
+      mapped_toast(error?.message || "Failed to create participant.", "error");
     }
   }
 
@@ -85,7 +91,7 @@ export default function AddParticipant() {
       try {
         const text = e.target?.result;
         if (typeof text !== "string") {
-            mapped_toast('Could not read file.', 'error')
+          mapped_toast("Could not read file.", "error");
           return;
         }
         // Assuming CSV format: name,email,collegeCode, year,hackerearthUser, phone
@@ -100,13 +106,19 @@ export default function AddParticipant() {
         const result = await participantService.bulkImport(data);
         if (result.failed > 0) {
           // TODO: Display detailed errors to the user
-            mapped_toast(`Bulk import finished: ${result.inserted} inserted, ${result.failed} failed.`, 'warning')
-            console.error(result);
-        }
-        else mapped_toast(`Bulk import finished: ${result.inserted} inserted`, "success")
+          mapped_toast(
+            `Bulk import finished: ${result.inserted} inserted, ${result.failed} failed.`,
+            "warning",
+          );
+          console.error(result);
+        } else
+          mapped_toast(
+            `Bulk import finished: ${result.inserted} inserted`,
+            "success",
+          );
         navigate("/participants");
       } catch (error: any) {
-          mapped_toast('Failed to process bulk import.', 'error')
+        mapped_toast("Failed to process bulk import.", "error");
         console.error("Failed to process bulk import.", error);
       }
     };
@@ -114,33 +126,21 @@ export default function AddParticipant() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Add New Participant
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Enter the details for the new participant or use bulk import.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="mr-2 h-4 w-4" />
-          Bulk Import (CSV)
-        </Button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".csv"
-          onChange={handleFileChange}
-        />
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-4xl font-extrabold tracking-tight text-white mb-2">
+          New Participant
+        </h2>
+        <p className="text-sm text-[#bcc9c5]">
+          Participant Registration
+        </p>
       </div>
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Participant Details</CardTitle>
-        </CardHeader>
-        <CardContent>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-surface-lowest rounded-2xl p-8 lg:p-12">
+          <h3 className="text-xl font-semibold text-white mb-8 border-b border-surface-highest/50 pb-4">
+            Manual Entry
+          </h3>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -250,15 +250,42 @@ export default function AddParticipant() {
                   )}
                 />
               </div>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "Creating..."
-                  : "Create Participant"}
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full bg-teal hover:bg-teal/90 text-[#00201b] font-semibold py-6 mt-8"
+              >
+                {form.formState.isSubmitting ? "Saving..." : "Add Participant"}
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="cursor-pointer border-2 border-dashed border-teal/40 bg-surface-lowest rounded-2xl p-12 h-full min-h-[400px] flex flex-col items-center justify-center text-center hover:border-teal"
+          >
+            <div className="w-20 h-20 rounded-full bg-surface-highest flex items-center justify-center mb-6">
+              <Upload className="w-10 h-10 text-teal" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Bulk Import</h3>
+            <p className="text-[#bcc9c5] text-sm mb-8 leading-relaxed">
+              Upload a CSV file to add multiple participants at once.
+            </p>
+            <span className="text-xs font-semibold text-teal bg-teal/10 px-5 py-3 rounded-full">
+              Select File
+            </span>
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".csv"
+            onChange={handleFileChange}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,10 +3,29 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import {mapped_toast} from "@/lib/toast_map.ts";
+import { Loader2, Command, ShieldCheck, Medal } from 'lucide-react';
+import { mapped_toast } from "@/lib/toast_map.ts";
+import { Link } from 'react-router-dom';
+
+/* ── Design tokens (Neon Arena / Stitch) ── */
+const T = {
+  bg: "#0e0e0e",
+  surface: "#1a1919",
+  surfaceLow: "#201f1f",
+  surfaceContainer: "#2c2c2c",
+  border: "#494847",
+  borderSub: "#494847",
+  textPrimary: "#ffffff",
+  textSecondary: "#adaaaa",
+  textMuted: "#777575",
+  accent: "#00FF94",
+  accentDim: "#00ed89",
+  accentContainer: "#00fd93",
+  accentBg: "#002213",
+  gold: "#ffd709",
+  goldBg: "#1a1404",
+  goldBorder: "#705d00",
+};
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -16,103 +35,279 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
-      console.error("Error", {
-        description: "Please fill in all fields",
-      });
+      mapped_toast("Please fill in all fields", "error");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.error("Error", {
-        description: "Please enter a valid email address",
-      });
+      mapped_toast("Please enter a valid email address", "error");
       return;
     }
 
     setIsSubmitting(true);
     try {
       await login({ email, password });
-      console.log("Success", {
-        description: "Logged in successfully",
-      });
-    } catch (error) {
-      mapped_toast('Invalid credentials', 'error')
-      let errorMessage = "Invalid credentials";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      console.error("Login Failed", {
-        description: errorMessage,
-      });
+    } catch (error: unknown) {
+      mapped_toast('Invalid credentials', 'error');
+      console.error("Login Failed", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold tracking-tight">Version'26</CardTitle>
-          <CardDescription className="text-lg font-medium text-primary">
-            Cognix
-          </CardDescription>
-          <p className="text-sm text-muted-foreground mt-2">
-            Welcome to Version'26. Enter your email and password to access the dashboard.
-          </p>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+    <div
+      className="min-h-screen flex flex-col font-sans overflow-hidden"
+      style={{ background: T.bg, color: T.textSecondary }}
+    >
+      {/* ── Top nav — Neon Arena style ── */}
+      <nav
+        className="w-full flex items-center justify-between px-6 sm:px-10 py-4 relative z-10"
+        style={{
+          background: "rgba(14,14,14,0.9)",
+          borderBottom: `1px solid ${T.borderSub}`,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center rounded-lg"
+            style={{ background: T.accent, padding: 6, width: 32, height: 32 }}
+          >
+            <Command className="h-4 w-4 text-black" strokeWidth={2.5} />
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="font-bold text-sm leading-none font-space"
+              style={{ color: T.textPrimary, letterSpacing: "-0.02em", fontFamily: "Space Grotesk, sans-serif" }}
+            >
+              Version 26
+            </span>
+            <div className="h-4 w-px" style={{ background: T.border }} />
+            <span
+              className="font-bold"
+              style={{
+                fontSize: 10,
+                color: T.accent,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
+              Cognix
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-5 text-xs font-medium" style={{ color: T.textSecondary }}>
+          {/* No public navigation links */}
+        </div>
+      </nav>
+
+      {/* ── Main centered content ── */}
+      <div className="flex-1 flex items-center justify-center p-4 relative z-0">
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -60%)",
+            width: 560,
+            height: 560,
+            background: "radial-gradient(circle, rgba(0,255,148,0.06) 0%, transparent 70%)",
+            borderRadius: "50%",
+          }}
+        />
+
+        {/* ── Login Card ── */}
+        <div
+          className="w-full max-w-[400px] p-8 sm:p-10 rounded-2xl relative animate-fade-up"
+          style={{
+            background: T.surface,
+            border: `1px solid ${T.border}`,
+            boxShadow: "0 0 48px rgba(0,255,148,0.04), 0 20px 60px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            className="absolute top-7 right-7 flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{
+              background: T.accentBg,
+              border: `1px solid ${T.accent}25`,
+            }}
+          >
+            <ShieldCheck className="w-3 h-3" style={{ color: T.accent }} />
+            <span
+              className="font-bold"
+              style={{ fontSize: 9, color: T.accent, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "Space Grotesk, sans-serif" }}
+            >
+              Secure
+            </span>
+          </div>
+
+          <div className="mb-8 text-center mt-2 flex flex-col items-center">
+            <div
+              className="mb-5 flex items-center justify-center rounded-xl"
+              style={{
+                background: T.accentBg,
+                border: `1px solid ${T.accent}30`,
+                width: 56,
+                height: 56,
+              }}
+            >
+              <Command className="w-6 h-6" style={{ color: T.accent }} strokeWidth={2.5} />
+            </div>
+
+            <p
+              className="font-bold mb-2"
+              style={{
+                fontSize: 10,
+                color: T.accent,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
+              Version 26 · Cognix
+            </p>
+            <h1 className="text-heading mb-2" style={{ color: T.textPrimary, fontFamily: "Space Grotesk, sans-serif" }}>
+              Sign in to Dashboard
+            </h1>
+            <p className="text-body" style={{ color: T.textSecondary }}>
+              Enter your credentials to access the portal
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label
+                htmlFor="email"
+                className="text-caption font-bold block"
+                style={{ color: T.textPrimary, letterSpacing: "0.04em", fontFamily: "Space Grotesk, sans-serif" }}
+              >
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11 rounded-xl text-sm transition-all duration-150"
+                style={{
+                  background: T.surfaceLow,
+                  border: `1px solid ${T.border}`,
+                  color: T.textPrimary,
+                  fontFamily: "Manrope, sans-serif",
+                }}
               />
             </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button variant="link" className="h-auto p-0 text-xs" type="button">
+                <Label
+                  htmlFor="password"
+                  className="text-caption font-bold"
+                  style={{ color: T.textPrimary, letterSpacing: "0.04em", fontFamily: "Space Grotesk, sans-serif" }}
+                >
+                  Password
+                </Label>
+                <button
+                  type="button"
+                  className="text-caption font-medium transition-colors duration-150"
+                  style={{ color: T.textSecondary }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.textSecondary; }}
+                >
                   Forgot password?
-                </Button>
+                </button>
               </div>
               <Input
                 id="password"
                 type="password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-11 rounded-xl text-sm transition-all duration-150"
+                style={{
+                  background: T.surfaceLow,
+                  border: `1px solid ${T.border}`,
+                  color: T.textPrimary,
+                  fontFamily: "Manrope, sans-serif",
+                }}
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+
+            <Button
+              type="submit"
+              className="w-full h-12 mt-6 rounded-xl font-bold text-sm border-none transition-all duration-200 hover:brightness-110"
+              disabled={isSubmitting}
+              style={{
+                background: T.accent,
+                color: "#000000",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
+                  Signing in…
                 </>
               ) : (
-                "Login"
+                <>
+                  <span className="mr-2 text-[8px]">●</span>
+                  Continue
+                </>
               )}
             </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Button variant="link" className="h-auto p-0 text-sm" type="button">
-                Register
-              </Button>
+
+            <div className="text-center mt-5">
+              <p className="text-sm" style={{ color: T.textSecondary }}>
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  className="font-bold transition-colors duration-150"
+                  style={{ color: T.accent }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accentDim; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent; }}
+                >
+                  Create account
+                </Link>
+              </p>
             </div>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+        </div>
+      </div>
+
+      <footer
+        className="w-full py-5 px-6 sm:px-10 flex flex-col sm:flex-row items-center justify-between text-xs font-medium"
+        style={{
+          color: T.textMuted,
+          borderTop: `1px solid ${T.borderSub}`,
+          fontFamily: "Manrope, sans-serif",
+        }}
+      >
+        <p>&copy; {new Date().getFullYear()} Version 26 NITT · Cognix</p>
+        <div className="flex gap-6 mt-3 sm:mt-0">
+          {["Privacy", "Terms", "Contact"].map((link) => (
+            <a
+              key={link}
+              href="#"
+              className="transition-colors duration-150"
+              style={{ fontFamily: "Space Grotesk, sans-serif" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.textPrimary; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.textMuted; }}
+            >
+              {link}
+            </a>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 };

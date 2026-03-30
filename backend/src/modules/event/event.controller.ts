@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/gaurds/jwt-auth.gaurd';
 import { PermissionsGuard } from '../auth/gaurds/permission.gaurd';
 import { Permission } from '../auth/decorators/permission.decorator';
 import { PERMISSIONS } from '../auth/rbac/role-permissions.map';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Events')
 @Controller({ path: 'events', version: '1' })
@@ -32,11 +33,11 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   // ────────────────────────────────────────────────
-  // GET PARTICIPANTS FOR EVENT
+  // GET PARTICIPANTS FOR EVENT (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.EVENT_READ)
+  @Public()
   @Get(':id/participants')
-  @ApiOperation({ summary: 'Get participants for a specific event' })
+  @ApiOperation({ summary: 'Get participants for a specific event (Public)' })
   @ApiParam({
     name: 'id',
     description: 'Event ID',
@@ -67,22 +68,24 @@ export class EventController {
   }
 
   // ────────────────────────────────────────────────
-  // GET ALL EVENTS
+  // GET ALL EVENTS (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.EVENT_READ)
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Get all events with filtering and pagination' })
+  @ApiOperation({
+    summary: 'Get all events with filtering and pagination (Public)',
+  })
   @ApiResponse({ status: 200, description: 'Events fetched successfully' })
   async findAll(@Query() query: QueryOptionsDto) {
     return this.eventService.findAll(query);
   }
 
   // ────────────────────────────────────────────────
-  // GET ONE EVENT
+  // GET ONE EVENT (PUBLIC)
   // ────────────────────────────────────────────────
-  @Permission(PERMISSIONS.EVENT_READ)
+  @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Get a single event by ID' })
+  @ApiOperation({ summary: 'Get a single event by ID (Public)' })
   @ApiParam({
     name: 'id',
     description: 'Event ID',
