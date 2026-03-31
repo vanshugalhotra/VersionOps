@@ -67,7 +67,7 @@ export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   if (user) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={'/'} replace />;
   }
 
   return <>{children}</>;

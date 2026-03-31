@@ -262,8 +262,8 @@ export default function ParticipantHome() {
 
       const [report, leaderboard] = await Promise.all([
         reportService.getMyCollegeReport({ suppressRedirect: true }),
-        leaderboardService.get({
-          take: 10,
+        leaderboardService.gettop5({
+          take: 5,
           includeRelations: true,
           suppressRedirect: true,
           suppressErrorToast: true,

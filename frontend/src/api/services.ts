@@ -208,6 +208,11 @@ export const leaderboardService = {
       `/leaderboard${buildQueryString(params)}`,
       getFetchOptions(params),
     ),
+  gettop5: (params: PaginationParams = {includeRelations: true, take:30}) =>
+    fetchApi<PaginatedResponse<LeaderboardEntry>>(
+        `/leaderboard/top5${buildQueryString(params)}`,
+        getFetchOptions(params),
+    ),
 
   recalculate: (options: FetchApiOptions = {}) =>
     fetchApi<{ success: boolean }>("/leaderboard/recalculate", {

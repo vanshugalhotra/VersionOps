@@ -127,7 +127,7 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
 
   const visibleNavItems = navItemsBase.filter((item) => {
     if (isParticipant && item.to === "/") return false;
-    if (isAdmin && item.to === "/home") return false;
+    if (!isParticipant && item.to === "/home") return false;
     return true;
   });
 
