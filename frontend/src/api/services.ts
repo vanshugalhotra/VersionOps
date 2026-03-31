@@ -203,9 +203,9 @@ export const participantService = {
 
 // Leaderboard
 export const leaderboardService = {
-  get: (params: PaginationParams = {}) =>
+  get: (params: PaginationParams = {includeRelations: true, take:30}) =>
     fetchApi<PaginatedResponse<LeaderboardEntry>>(
-      `/leaderboard/top5`,
+      `/leaderboard${buildQueryString(params)}`,
       getFetchOptions(params),
     ),
 
